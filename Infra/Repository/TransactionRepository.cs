@@ -89,7 +89,17 @@ public class TransactionRepository : ITransactionRepository
 
     public async Task UpdateAsync(Transaction entity)
     {
-        throw new NotImplementedException("Transactions should not be updated.");
+        using var conn = _connectionFactory.CreateConnection();
+        await conn.ExecuteAsync(
+            TransactionQueries.Update,
+            new 
+            { 
+                entity.Id, 
+                entity.Amount, 
+                entity.TransactionDate, 
+                entity.UpdatedAt,
+                entity.UpdatedBy
+            });
     }
 
     public async Task DeleteAsync(Guid id)
