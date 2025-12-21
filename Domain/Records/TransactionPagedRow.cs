@@ -16,6 +16,7 @@ public sealed class TransactionPagedRow
     public int TotalInstallments { get; init; }
     public bool IsFixed { get; init; }
     public bool IsPaid { get; init; }
+    public string? Observation { get; init; }
     public int TotalRows { get; init; }
     public int TotalPages { get; init; }
     public int CurrentPage { get; init; }

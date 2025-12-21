@@ -18,7 +18,9 @@ public static class TransactionPagedRowMapper
             row.InstallmentNumber,
             row.TotalInstallments,
             row.IsFixed,
-            row.IsPaid
+            row.IsPaid,
+            null,
+            row.Observation
         );
     }
 }

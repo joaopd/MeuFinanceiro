@@ -118,18 +118,22 @@ public class FirstMigration : Migration
         Create.Table("Transaction")
             .WithColumn(Id).AsGuid().PrimaryKey()
             .WithColumn("UserId").AsGuid().NotNullable()
-                .ForeignKey("FK_Transaction_User", "User", Id)
+            .ForeignKey("FK_Transaction_User", "User", Id)
             .WithColumn("CategoryId").AsGuid().NotNullable()
-                .ForeignKey("FK_Transaction_Category", "Category", Id)
+            .ForeignKey("FK_Transaction_Category", "Category", Id)
             .WithColumn("Amount").AsDecimal(18, 2).NotNullable()
             .WithColumn("TransactionDate").AsDateTime().NotNullable()
             .WithColumn("TransactionType").AsInt16().NotNullable()
             .WithColumn("PaymentMethod").AsInt16().NotNullable()
+            
             .WithColumn("CardId").AsGuid().Nullable()
+            .ForeignKey("FK_Transaction_Card", "Card", Id) 
+
             .WithColumn("InstallmentNumber").AsInt32().Nullable()
             .WithColumn("TotalInstallments").AsInt32().Nullable()
+            
             .WithColumn("IsPaid").AsBoolean().NotNullable().WithDefaultValue(false)
-                .ForeignKey("FK_Transaction_Card", "Card", Id)
+            
             .WithCommonColumns();
         
         Create.Index("IX_Transaction_UserId")

@@ -1,13 +1,14 @@
 using Api.Extensions;
 using Application.DependencyInjection;
 using Infra;
+using Infra.Extensions;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 
-builder.Services.AddInfrastructure(); 
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
 builder.Services.AddCors(options =>
@@ -25,6 +26,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 var app = builder.Build();
+app.MigrateDatabase();
 
 if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
