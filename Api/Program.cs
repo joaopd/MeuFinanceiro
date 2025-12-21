@@ -1,38 +1,47 @@
+using Api.Extensions;
+using Application.DependencyInjection;
+using Infra;
+using Scalar.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 
+builder.Services.AddInfrastructure(); 
+builder.Services.AddApplication();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        b => b.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    Console.WriteLine("ALERTA: ConnectionString 'DefaultConnection' não encontrada.");
+}
+
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
     app.MapOpenApi();
+    
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("Meu Financeiro API")
+            .WithTheme(ScalarTheme.Mars)
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
+app.MapEndpoints(); 
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -9,12 +9,18 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1"/>
+        <PackageReference Include="Scalar.AspNetCore" Version="2.11.9" />
     </ItemGroup>
 
     <ItemGroup>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Application\Application.csproj" />
+      <ProjectReference Include="..\Infra\Infra.csproj" />
     </ItemGroup>
 
 </Project>

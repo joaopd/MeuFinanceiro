@@ -51,7 +51,12 @@ public class UpdateTransactionService : IUpdateTransactionService
                     request.TransactionDate.Value,
                     request.UpdatedBy);
             }
-
+            
+            if (request.Observation != null)
+            {
+                transaction.UpdateObservation(request.Observation, request.UpdatedBy);
+            }
+            
             await _transactionRepository.UpdateAsync(transaction);
 
             _logger.LogInformation(

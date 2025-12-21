@@ -8,4 +8,5 @@ public class UpdateTransactionRequestDto
     public decimal? Amount { get; set; }
     public DateTime? TransactionDate { get; set; }
     public Guid UpdatedBy { get; set; }
+    public string? Observation { get; set; } 
 }

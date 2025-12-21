@@ -12,6 +12,6 @@ public class CreateTransactionRequestDto
     public Guid? CardId { get; set; }
     public PaymentMethod? PaymentMethod { get; set; }
     public  int TotalInstallments  { get; set; }
-    
+    public string? Observation { get; set; } 
     public bool IsFixed { get; set; }
 }

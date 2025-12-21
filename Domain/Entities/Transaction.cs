@@ -19,7 +19,8 @@ public class Transaction : BaseEntity
     public bool IsFixed { get; private set; }
     public bool IsPaid { get; private set; }
     public Guid? FixedExpenseId { get; private set; }
-
+    public string? Observation { get; private set; } 
+    
     public Transaction() { }
 
     public Transaction(
@@ -34,7 +35,8 @@ public class Transaction : BaseEntity
         int totalInstallments,
         bool isFixed,
         bool isPaid,
-        Guid? fixedExpenseId = null)
+        Guid? fixedExpenseId = null,
+        string? observation = null)
     {
         if (amount <= 0)
             throw new ArgumentException("Amount must be greater than zero");
@@ -54,6 +56,7 @@ public class Transaction : BaseEntity
         IsFixed = isFixed;
         IsPaid = isPaid;
         FixedExpenseId = fixedExpenseId;
+        Observation = observation;
     }
     
     public void SetPaymentStatus(bool isPaid, Guid updatedBy)
@@ -74,6 +77,11 @@ public class Transaction : BaseEntity
     public void ChangeDate(DateTime newDate, Guid updatedBy)
     {
         TransactionDate = newDate;
+        Touch(updatedBy);
+    }
+    public void UpdateObservation(string? observation, Guid updatedBy)
+    {
+        Observation = observation;
         Touch(updatedBy);
     }
 }

@@ -13,4 +13,5 @@ public class TransactionResponseDto
     public Guid? CardId { get; set; }
     public PaymentMethod? PaymentMethod { get; set; }
     public bool IsFixed { get; set; }
+    public string? Observation { get; set; }
 }

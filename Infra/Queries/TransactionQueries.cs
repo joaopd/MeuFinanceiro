@@ -19,15 +19,33 @@ public static class TransactionQueries
           AND "IsDeleted" = false;
     """;
     
+    public const string Insert = """
+                                     INSERT INTO "Transaction" (
+                                         "Id", "UserId", "CategoryId", "Amount", "TransactionDate",
+                                         "TransactionType", "PaymentMethod", "CardId",
+                                         "InstallmentNumber", "TotalInstallments", "IsFixed", "IsPaid",
+                                         "FixedExpenseId", "Observation", -- <--- Add Coluna
+                                         "CreatedAt", "UpdatedAt", "IsDeleted"
+                                     )
+                                     VALUES (
+                                         @Id, @UserId, @CategoryId, @Amount, @TransactionDate,
+                                         @TransactionType, @PaymentMethod, @CardId,
+                                         @InstallmentNumber, @TotalInstallments, @IsFixed, @IsPaid,
+                                         @FixedExpenseId, @Observation, -- <--- Add Parâmetro
+                                         @CreatedAt, @UpdatedAt, false
+                                     )
+                                 """;
+
     public const string Update = """
-        UPDATE "Transaction"
-        SET
-            "Amount" = @Amount,
-            "TransactionDate" = @TransactionDate,
-            "UpdatedAt" = @UpdatedAt,
-            "UpdatedBy" = @UpdatedBy
-        WHERE "Id" = @Id;
-    """;
+                                     UPDATE "Transaction"
+                                     SET
+                                         "Amount" = @Amount,
+                                         "TransactionDate" = @TransactionDate,
+                                         "Observation" = @Observation, -- <--- Add Update
+                                         "UpdatedAt" = @UpdatedAt,
+                                         "UpdatedBy" = @UpdatedBy
+                                     WHERE "Id" = @Id;
+                                 """;
 
     public const string SoftDelete = """
         UPDATE "Transaction"
@@ -106,21 +124,5 @@ public static class TransactionQueries
                                                      AND EXTRACT(YEAR FROM "TransactionDate") = @Year
                                                      AND "IsDeleted" = false;
                                                """;
-
-    public const string Insert = """
-                                     INSERT INTO "Transaction" (
-                                         "Id", "UserId", "CategoryId", "Amount", "TransactionDate",
-                                         "TransactionType", "PaymentMethod", "CardId",
-                                         "InstallmentNumber", "TotalInstallments", "IsFixed", "IsPaid", 
-                                         "FixedExpenseId", 
-                                         "CreatedAt", "UpdatedAt", "IsDeleted"
-                                     )
-                                     VALUES (
-                                         @Id, @UserId, @CategoryId, @Amount, @TransactionDate,
-                                         @TransactionType, @PaymentMethod, @CardId,
-                                         @InstallmentNumber, @TotalInstallments, @IsFixed, @IsPaid,
-                                         @FixedExpenseId,
-                                         @CreatedAt, @UpdatedAt, false
-                                     )
-                                 """;
+    
 }
