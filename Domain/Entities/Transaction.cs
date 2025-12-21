@@ -53,9 +53,9 @@ public class Transaction : BaseEntity
         IsPaid = isPaid;
     }
     
-    public void MarkAsPaid(Guid updatedBy)
+    public void SetPaymentStatus(bool isPaid, Guid updatedBy)
     {
-        IsPaid = true;
+        IsPaid = isPaid;
         Touch(updatedBy);
     }
     

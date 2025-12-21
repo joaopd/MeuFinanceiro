@@ -87,4 +87,29 @@ public static class TransactionQueries
                @CurrentPage AS current_page, @RowsPerPage AS rows_per_page
         FROM paged;
     """;
+    
+    public const string GetExpensesByCategory = """
+                                                    SELECT 
+                                                        c."Name" as Category, 
+                                                        SUM(t."Amount") as Total
+                                                    FROM "Transactions" t  
+                                                    JOIN "Category" c ON t."CategoryId" = c."Id"
+                                                    WHERE t."UserId" = @UserId
+                                                      AND t."TransactionDate" BETWEEN @StartDate AND @EndDate
+                                                      AND t."TransactionType" = 1 
+                                                      AND t."IsDeleted" = false
+                                                    GROUP BY c."Name"
+                                                    ORDER BY Total DESC;
+                                                """;
+    
+    public const string GetCashFlow = """
+                                          SELECT 
+                                              "TransactionType", 
+                                              SUM("Amount") as Total
+                                          FROM "Transaction"
+                                          WHERE "UserId" = @UserId
+                                            AND "TransactionDate" BETWEEN @StartDate AND @EndDate
+                                            AND "IsDeleted" = false
+                                          GROUP BY "TransactionType";
+                                      """;
 }

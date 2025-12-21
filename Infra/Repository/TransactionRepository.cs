@@ -136,5 +136,19 @@ public class TransactionRepository : ITransactionRepository
                 OrderAsc = orderAsc
             });
     }
-
+    public async Task<IEnumerable<CategoryExpenseRecord>> GetExpensesByCategoryAsync(Guid userId, DateTime start, DateTime end)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QueryAsync<CategoryExpenseRecord>(
+            TransactionQueries.GetExpensesByCategory,
+            new { UserId = userId, StartDate = start, EndDate = end });
+    }
+    
+    public async Task<IEnumerable<CashFlowRecord>> GetCashFlowAsync(Guid userId, DateTime start, DateTime end)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QueryAsync<CashFlowRecord>(
+            TransactionQueries.GetCashFlow,
+            new { UserId = userId, StartDate = start, EndDate = end });
+    }
 }

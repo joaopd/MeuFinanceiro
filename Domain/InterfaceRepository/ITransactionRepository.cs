@@ -32,4 +32,12 @@ public interface ITransactionRepository : IRepository<Transaction>
     );
     
     Task<bool> InsertBulkAsync(IEnumerable<Transaction> entities);
+    
+    Task<IEnumerable<CategoryExpenseRecord>> GetExpensesByCategoryAsync(
+        Guid userId, 
+        DateTime startDate, 
+        DateTime endDate
+    );
+    
+    Task<IEnumerable<CashFlowRecord>> GetCashFlowAsync(Guid userId, DateTime start, DateTime end);
 }
