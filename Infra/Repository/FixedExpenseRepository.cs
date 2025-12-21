@@ -30,9 +30,7 @@ public class FixedExpenseRepository : IFixedExpenseRepository
             FixedExpenseQueries.GetAll);
     }
 
-    public async Task<IEnumerable<FixedExpense>> GetActiveAsync(
-        Guid userId,
-        DateTime referenceDate)
+    public async Task<IEnumerable<FixedExpense>> GetActiveAsync(Guid userId, DateTime referenceDate)
     {
         using var conn = _connectionFactory.CreateConnection();
         return await conn.QueryAsync<FixedExpense>(
@@ -61,6 +59,6 @@ public class FixedExpenseRepository : IFixedExpenseRepository
         using var conn = _connectionFactory.CreateConnection();
         await conn.ExecuteAsync(
             FixedExpenseQueries.SoftDelete,
-            new { Id = id, UpdatedAt = DateTime.UtcNow });
+            new { Id = id, UpdatedAt = DateTime.UtcNow, UpdatedBy = (Guid?)null });
     }
 }

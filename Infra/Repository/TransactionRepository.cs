@@ -151,4 +151,19 @@ public class TransactionRepository : ITransactionRepository
             TransactionQueries.GetCashFlow,
             new { UserId = userId, StartDate = start, EndDate = end });
     }
+    
+    public async Task<bool> ExistsByFixedExpenseAsync(Guid fixedExpenseId, int month, int year)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        var count = await conn.ExecuteScalarAsync<int>(
+            TransactionQueries.ExistsByFixedExpense,
+            new 
+            { 
+                FixedExpenseId = fixedExpenseId, 
+                Month = month, 
+                Year = year 
+            });
+        
+        return count > 0;
+    }
 }

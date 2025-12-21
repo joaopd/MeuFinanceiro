@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Services\Dashboard\GetMonthlyForecast\" />
-      <Folder Include="Services\FixedExpense\CreateFixedExpense\" />
-      <Folder Include="Services\Transaction\GetBalanceByPeriod\" />
-      <Folder Include="Services\User\GetDependents\" />
       <Folder Include="Shared\Extensions\" />
     </ItemGroup>
 

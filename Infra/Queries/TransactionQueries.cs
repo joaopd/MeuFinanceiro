@@ -18,22 +18,7 @@ public static class TransactionQueries
           AND "TransactionDate" BETWEEN @StartDate AND @EndDate
           AND "IsDeleted" = false;
     """;
-
-    public const string Insert = """
-        INSERT INTO "Transaction" (
-            "Id", "UserId", "CategoryId", "Amount", "TransactionDate",
-            "TransactionType", "PaymentMethod", "CardId",
-            "InstallmentNumber", "TotalInstallments", "IsFixed", "IsPaid",
-            "CreatedAt", "UpdatedAt", "IsDeleted"
-        )
-        VALUES (
-            @Id, @UserId, @CategoryId, @Amount, @TransactionDate,
-            @TransactionType, @PaymentMethod, @CardId,
-            @InstallmentNumber, @TotalInstallments, @IsFixed, @IsPaid,
-            @CreatedAt, @UpdatedAt, false
-        )
-    """;
-
+    
     public const string Update = """
         UPDATE "Transaction"
         SET
@@ -112,4 +97,30 @@ public static class TransactionQueries
                                             AND "IsDeleted" = false
                                           GROUP BY "TransactionType";
                                       """;
+
+    public const string ExistsByFixedExpense = """
+                                                   SELECT COUNT(1) 
+                                                   FROM "Transaction" 
+                                                   WHERE "FixedExpenseId" = @FixedExpenseId
+                                                     AND EXTRACT(MONTH FROM "TransactionDate") = @Month
+                                                     AND EXTRACT(YEAR FROM "TransactionDate") = @Year
+                                                     AND "IsDeleted" = false;
+                                               """;
+
+    public const string Insert = """
+                                     INSERT INTO "Transaction" (
+                                         "Id", "UserId", "CategoryId", "Amount", "TransactionDate",
+                                         "TransactionType", "PaymentMethod", "CardId",
+                                         "InstallmentNumber", "TotalInstallments", "IsFixed", "IsPaid", 
+                                         "FixedExpenseId", 
+                                         "CreatedAt", "UpdatedAt", "IsDeleted"
+                                     )
+                                     VALUES (
+                                         @Id, @UserId, @CategoryId, @Amount, @TransactionDate,
+                                         @TransactionType, @PaymentMethod, @CardId,
+                                         @InstallmentNumber, @TotalInstallments, @IsFixed, @IsPaid,
+                                         @FixedExpenseId,
+                                         @CreatedAt, @UpdatedAt, false
+                                     )
+                                 """;
 }

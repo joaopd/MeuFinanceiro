@@ -3,21 +3,17 @@
 public static class FixedExpenseQueries
 {
     public const string GetById = """
-                                      SELECT *
-                                      FROM "FixedExpenses"
-                                      WHERE "Id" = @Id
-                                        AND "IsDeleted" = false;
+                                      SELECT * FROM "FixedExpense"
+                                      WHERE "Id" = @Id AND "IsDeleted" = false;
                                   """;
 
     public const string GetAll = """
-                                     SELECT *
-                                     FROM "FixedExpenses"
+                                     SELECT * FROM "FixedExpense"
                                      WHERE "IsDeleted" = false;
                                  """;
 
     public const string GetActiveByUser = """
-                                              SELECT *
-                                              FROM "FixedExpenses"
+                                              SELECT * FROM "FixedExpense"
                                               WHERE "UserId" = @UserId
                                                 AND "StartDate" <= @ReferenceDate
                                                 AND ("EndDate" IS NULL OR "EndDate" >= @ReferenceDate)
@@ -25,8 +21,7 @@ public static class FixedExpenseQueries
                                           """;
 
     public const string Insert = """
-                                     INSERT INTO "FixedExpenses"
-                                     (
+                                     INSERT INTO "FixedExpense" (
                                          "Id",
                                          "UserId",
                                          "Description",
@@ -40,8 +35,7 @@ public static class FixedExpenseQueries
                                          "UpdatedAt",
                                          "IsDeleted"
                                      )
-                                     VALUES
-                                     (
+                                     VALUES (
                                          @Id,
                                          @UserId,
                                          @Description,
@@ -53,26 +47,25 @@ public static class FixedExpenseQueries
                                          @CardId,
                                          @CreatedAt,
                                          @UpdatedAt,
-                                         @IsDeleted
+                                         false
                                      )
                                      RETURNING "Id";
                                  """;
 
     public const string Update = """
-                                     UPDATE "FixedExpenses"
+                                     UPDATE "FixedExpense"
                                      SET
                                          "Description" = @Description,
                                          "Amount" = @Amount,
                                          "EndDate" = @EndDate,
-                                         "UpdatedAt" = @UpdatedAt
+                                         "UpdatedAt" = @UpdatedAt,
+                                         "UpdatedBy" = @UpdatedBy
                                      WHERE "Id" = @Id;
                                  """;
 
     public const string SoftDelete = """
-                                         UPDATE "FixedExpenses"
-                                         SET
-                                             "IsDeleted" = true,
-                                             "UpdatedAt" = @UpdatedAt
+                                         UPDATE "FixedExpense"
+                                         SET "IsDeleted" = true, "UpdatedAt" = @UpdatedAt, "UpdatedBy" = @UpdatedBy
                                          WHERE "Id" = @Id;
                                      """;
 }

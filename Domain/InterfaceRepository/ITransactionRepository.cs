@@ -40,4 +40,4 @@ public interface ITransactionRepository : IRepository<Transaction>
     );
     
     Task<IEnumerable<CashFlowRecord>> GetCashFlowAsync(Guid userId, DateTime start, DateTime end);
-}
+    Task<bool> ExistsByFixedExpenseAsync(Guid fixedExpenseId, int month, int year);}

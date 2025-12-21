@@ -1,10 +1,10 @@
 ﻿using Domain.Enums;
 
-namespace Application.Shared.Dtos;
+namespace Application.Services.FixedExpense.CreateFixedExpense;
 
-public class FixedExpenseResponseDto
+public class CreateFixedExpenseRequestDto
 {
-    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public string Description { get; set; } = default!;
     public decimal Amount { get; set; }
     public DateTime StartDate { get; set; }

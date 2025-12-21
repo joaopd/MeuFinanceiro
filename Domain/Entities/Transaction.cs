@@ -18,6 +18,7 @@ public class Transaction : BaseEntity
 
     public bool IsFixed { get; private set; }
     public bool IsPaid { get; private set; }
+    public Guid? FixedExpenseId { get; private set; }
 
     public Transaction() { }
 
@@ -32,7 +33,8 @@ public class Transaction : BaseEntity
         int installmentNumber,
         int totalInstallments,
         bool isFixed,
-        bool isPaid)
+        bool isPaid,
+        Guid? fixedExpenseId = null)
     {
         if (amount <= 0)
             throw new ArgumentException("Amount must be greater than zero");
@@ -51,6 +53,7 @@ public class Transaction : BaseEntity
         TotalInstallments = totalInstallments;
         IsFixed = isFixed;
         IsPaid = isPaid;
+        FixedExpenseId = fixedExpenseId;
     }
     
     public void SetPaymentStatus(bool isPaid, Guid updatedBy)
