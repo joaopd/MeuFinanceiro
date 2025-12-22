@@ -1,4 +1,5 @@
-﻿using Application.Services.Dashboard.GetDashboardService;
+﻿using Application.Services.Category.CreateCategory;
+using Application.Services.Dashboard.GetDashboardService;
 using Application.Services.FixedExpense.CreateFixedExpense;
 using Application.Services.FixedExpense.GenerateMonthly;
 using Application.Services.Transaction.CreateTransaction;
@@ -6,6 +7,8 @@ using Application.Services.Transaction.GetTransactionsByPeriod;
 using Application.Services.Transaction.TogglePaymentStatus;
 using Application.Services.Transaction.UpdateTransaction;
 using Application.Services.User.CreateUser;
+using Application.Services.User.GetByEmail;
+using Application.Services.User.GetDependents;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.DependencyInjection;
@@ -18,6 +21,9 @@ public static class DependencyInjection
         // USER
         // =========================
         services.AddScoped<ICreateUserService, CreateUserService>();
+        services.AddScoped<IGetByEmailService, GetByEmailService>();
+        services.AddScoped<IGetDependentsService, GetDependentsService>();
+
 
         // =========================
         // TRANSACTION
@@ -37,7 +43,22 @@ public static class DependencyInjection
         // DASHBOARD
         // =========================
         services.AddScoped<IGetDashboardService, GetDashboardService>();
+        
+        // =========================
+        // Category
+        // =========================
+        services.AddScoped<ICreateCategoryService, CreateCategoryService>();
+        
+        // =========================
+        // Services de Card
+        // =========================
 
+        services.AddScoped<ICreateCardService, CreateCardService>();
+        services.AddScoped<IGetFamilyCardsService, GetFamilyCardsService>();
+        services.AddScoped<IGetUserCardsService, GetUserCardsService>();
+        services.AddScoped<IUpdateCardService, UpdateCardService>();
+        services.AddScoped<IDeleteCardService, DeleteCardService>();
+        
         return services;
     }
 }

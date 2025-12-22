@@ -1,4 +1,4 @@
-﻿using Application.Dtos.User;
+﻿using Application.Shared.Dtos;
 using Domain.Entities;
 
 namespace Application.Shared.Mappers;
@@ -11,7 +11,8 @@ public static class UserMapper
         {
             Id = user.Id,
             Name = user.Name,
-            Email = user.Email
+            Email = user.Email,
+            ParentUserId = user.ParentUserId
         };
     }
 }

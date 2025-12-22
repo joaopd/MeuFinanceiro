@@ -1,37 +1,41 @@
-﻿using Domain.Enums;
-
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class Card : BaseEntity
 {
-    public string Name { get; private set; } = default!;
-    public PaymentMethod PaymentMethod { get; private set; }
-    public decimal? CreditLimit { get; private set; }
+    public string Name { get; private set; }
+    public decimal CreditLimit { get; private set; }
+    public Guid UserId { get; private set; }
+    public int ClosingDay { get; private set; }
+    public int DueDay { get; private set; }
+    public string Color { get; private set; } 
 
     protected Card() { }
 
-    public Card(
-        string name,
-        PaymentMethod paymentMethod,
-        decimal? creditLimit = null)
+    public Card(string name, decimal creditLimit, Guid userId, int closingDay, int dueDay, string color)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Card name is required");
-
-        if (paymentMethod == PaymentMethod.CREDIT && creditLimit is null)
-            throw new ArgumentException("Credit limit is required for credit cards");
-
         Name = name;
-        PaymentMethod = paymentMethod;
         CreditLimit = creditLimit;
+        UserId = userId;
+        ClosingDay = closingDay;
+        DueDay = dueDay;
+        Color = color; 
+        CreatedAt = DateTime.UtcNow;
+        IsDeleted = false;
     }
 
-    public void UpdateName(string name, Guid updatedBy)
+    public void Update(string name, decimal creditLimit, int closingDay, int dueDay, string color)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Card name is required");
-
         Name = name;
-        Touch(updatedBy);
+        CreditLimit = creditLimit;
+        ClosingDay = closingDay;
+        DueDay = dueDay;
+        Color = color; 
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Delete()
+    {
+        IsDeleted = true;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

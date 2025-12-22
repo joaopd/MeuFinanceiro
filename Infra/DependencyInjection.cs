@@ -5,6 +5,7 @@ using Infra.Repository;
 using Microsoft.Extensions.Configuration; // <--- Importante
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using Domain.InterfaceRepository.BaseRepository;
 
 namespace Infra;
 
@@ -17,6 +18,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IFixedExpenseRepository, FixedExpenseRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICardRepository, CardRepository>();
 
         // ===========================================
         // CONFIGURAÇÃO DO FLUENT MIGRATOR

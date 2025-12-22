@@ -1,4 +1,4 @@
-﻿using Application.Dtos.User;
+﻿using Application.Shared.Dtos;
 using FluentResults;
 
 namespace Application.Services.User.CreateUser;

@@ -1,10 +1,9 @@
-﻿namespace Application.Shared.Dtos;
+﻿namespace Application.Services.Card.UpdateCard;
 
-public record CardResponseDto(
+public record UpdateCardRequestDto(
     Guid Id,
     string Name,
     decimal CreditLimit,
-    Guid UserId,
     int ClosingDay,
     int DueDay,
     string Color 

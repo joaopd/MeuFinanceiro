@@ -75,8 +75,7 @@ public class FirstMigration : Migration
         Create.Table("Category")
             .WithColumn(Id).AsGuid().PrimaryKey()
             .WithColumn("Name").AsString(100).NotNullable()
-            .WithColumn("ExpenseType").AsInt16().NotNullable()
-
+            // Removido ExpenseType
             .WithCommonColumns();
     }
 

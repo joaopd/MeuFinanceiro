@@ -25,6 +25,7 @@ public class UserRepository : IUserRepository
             {
                 user.Id,
                 user.Name,
+                user.Email,
                 user.ParentUserId,
                 user.CreatedAt,
                 user.UpdatedAt,
@@ -42,6 +43,15 @@ public class UserRepository : IUserRepository
             UserQueries.GetById,
             new { Id = id });
     }
+    
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        return await connection.QuerySingleOrDefaultAsync<User>(
+            UserQueries.GetByEmail,
+            new { Email = email });
+    }
 
     public async Task<IEnumerable<User>> GetDependentsAsync(Guid parentUserId)
     {
@@ -49,6 +59,13 @@ public class UserRepository : IUserRepository
 
         return await connection.QueryAsync<User>(
             UserQueries.GetDependents,
+            new { ParentUserId = parentUserId });
+    }
+    public async Task<IEnumerable<User>> GetByParentIdAsync(Guid parentUserId)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QueryAsync<User>(
+            UserQueries.GetByParentId,
             new { ParentUserId = parentUserId });
     }
 }

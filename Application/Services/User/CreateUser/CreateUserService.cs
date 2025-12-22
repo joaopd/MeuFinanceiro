@@ -1,4 +1,4 @@
-﻿using Application.Dtos.User;
+﻿using Application.Shared.Dtos;
 using Application.Shared.Mappers;
 using Domain.Abstractions.ErrorHandling;
 using Domain.Entities;

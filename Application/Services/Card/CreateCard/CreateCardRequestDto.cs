@@ -1,7 +1,6 @@
-﻿namespace Application.Shared.Dtos;
+﻿namespace Application.Services.Card.CreateCard;
 
-public record CardResponseDto(
-    Guid Id,
+public record CreateCardRequestDto(
     string Name,
     decimal CreditLimit,
     Guid UserId,

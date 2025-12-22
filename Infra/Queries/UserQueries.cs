@@ -3,10 +3,11 @@
 public static class UserQueries
 {
     public const string Insert = """
-                                     INSERT INTO "Users"
+                                     INSERT INTO "User"
                                      (
                                          "Id",
                                          "Name",
+                                         "Email",
                                          "ParentUserId",
                                          "CreatedAt",
                                          "UpdatedAt",
@@ -16,6 +17,7 @@ public static class UserQueries
                                      (
                                          @Id,
                                          @Name,
+                                         @Email,
                                          @ParentUserId,
                                          @CreatedAt,
                                          @UpdatedAt,
@@ -26,14 +28,26 @@ public static class UserQueries
 
     public const string GetById = """
                                       SELECT *
-                                      FROM "Users"
+                                      FROM "User"
                                       WHERE "Id" = @Id
+                                        AND "IsDeleted" = false;
+                                  """;
+    public const string GetByEmail = """
+                                      SELECT *
+                                      FROM "User"
+                                      WHERE "Email" = @Email
                                         AND "IsDeleted" = false;
                                   """;
 
     public const string GetDependents = """
                                             SELECT *
-                                            FROM "Users"
+                                            FROM "User"
+                                            WHERE "ParentUserId" = @ParentUserId
+                                              AND "IsDeleted" = false;
+                                        """;
+    
+    public const string GetByParentId = """
+                                            SELECT * FROM "User"
                                             WHERE "ParentUserId" = @ParentUserId
                                               AND "IsDeleted" = false;
                                         """;

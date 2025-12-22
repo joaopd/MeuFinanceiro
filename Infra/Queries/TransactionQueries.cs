@@ -95,7 +95,7 @@ public static class TransactionQueries
                                                     SELECT 
                                                         c."Name" as Category, 
                                                         SUM(t."Amount") as Total
-                                                    FROM "Transactions" t  
+                                                    FROM "Transaction" t  
                                                     JOIN "Category" c ON t."CategoryId" = c."Id"
                                                     WHERE t."UserId" = @UserId
                                                       AND t."TransactionDate" BETWEEN @StartDate AND @EndDate

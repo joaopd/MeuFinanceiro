@@ -12,13 +12,10 @@ public class CreateTransactionEndpoint : IEndpoint
         app.MapPost("api/v1/transactions", HandleAsync)
             .WithTags("Transactions")
             .WithName("CreateTransaction")
+            .WithSummary("Criar nova transação")
+            .WithDescription("Registra uma nova despesa ou receita.")
             .Produces(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status400BadRequest)
-            .WithOpenApi(operation => new(operation)
-            {
-                Summary = "Cria uma nova transação",
-                Description = "Cria uma transação financeira (Despesa ou Receita), suportando parcelamento."
-            });
+            .Produces(StatusCodes.Status400BadRequest);
     }
 
     private static async Task<IResult> HandleAsync(
