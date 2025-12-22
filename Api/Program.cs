@@ -10,7 +10,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
-
+builder.Services.AddAntiforgery();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -43,7 +43,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-
+app.UseAntiforgery();
 app.MapEndpoints(); 
 
 app.Run();

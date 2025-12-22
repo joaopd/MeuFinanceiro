@@ -48,6 +48,7 @@ public class GenerateMonthlyFixedExpensesService : IGenerateMonthlyFixedExpenses
                 var transaction = new Domain.Entities.Transaction(
                         userId: userId,
                         categoryId: fixedItem.CategoryId,
+                        observation: fixedItem.Description,
                         amount: fixedItem.Amount,
                         transactionDate: transactionDate,
                         transactionType: Domain.Enums.TransactionType.EXPENSE,

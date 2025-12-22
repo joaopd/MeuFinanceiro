@@ -12,6 +12,7 @@ using Application.Services.FixedExpense.GetAllFixedExpenseByUserId;
 using Application.Services.FixedExpense.UpdateFixedExpense;
 using Application.Services.Transaction.CreateTransaction;
 using Application.Services.Transaction.GetTransactionsByPeriod;
+using Application.Services.Transaction.ImportInvoice;
 using Application.Services.Transaction.TogglePaymentStatus;
 using Application.Services.Transaction.UpdateTransaction;
 using Application.Services.User.CreateUser;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IUpdateTransactionService, UpdateTransactionService>();
         services.AddScoped<IGetTransactionsByPeriodService, GetTransactionsByPeriodService>();
         services.AddScoped<ITogglePaymentStatusService, TogglePaymentStatusService>();
+        services.AddScoped<IImportInvoiceService, GeminiInvoiceService>();
 
         // =========================
         // FIXED EXPENSE

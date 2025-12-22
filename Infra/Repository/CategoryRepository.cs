@@ -35,4 +35,12 @@ public class CategoryRepository : ICategoryRepository
             new { Id = id });
         
     }
+    
+    public async Task<Category?> GetByNameAsync(string name)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<Category>(
+            @"SELECT * FROM ""Category"" WHERE ""Name"" ILIKE @Name AND ""IsDeleted"" = false LIMIT 1;", 
+            new { Name = name });
+    }
 }
