@@ -42,6 +42,7 @@ public static class TransactionQueries
                                          "Amount" = @Amount,
                                          "TransactionDate" = @TransactionDate,
                                          "Observation" = @Observation,
+                                         "IsPaid" = @IsPaid,
                                          "UpdatedAt" = @UpdatedAt,
                                          "UpdatedBy" = @UpdatedBy
                                      WHERE "Id" = @Id;

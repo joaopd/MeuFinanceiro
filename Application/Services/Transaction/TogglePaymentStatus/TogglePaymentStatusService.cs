@@ -18,14 +18,13 @@ public class TogglePaymentStatusService : ITogglePaymentStatusService
         _logger = logger;
     }
 
-    public async Task<Result> ExecuteAsync(Guid transactionId, bool isPaid, Guid updatedBy)
+    public async Task<Result> ExecuteAsync(Guid transactionId, Guid updatedBy)
     {
         try
         {
             _logger.LogInformation(
-                "TogglePaymentStatus started - TransactionId: {TransactionId}, NewStatus: {IsPaid}",
-                transactionId,
-                isPaid);
+                "TogglePaymentStatus started - TransactionId: {TransactionId}",
+                transactionId);
 
             var transaction = await _transactionRepository.GetByIdAsync(transactionId);
 
@@ -35,7 +34,7 @@ public class TogglePaymentStatusService : ITogglePaymentStatusService
                 return Result.Fail(FinanceErrorMessage.TransactionNotFound);
             }
 
-            transaction.SetPaymentStatus(isPaid, updatedBy);
+            transaction.SetPaymentStatus(updatedBy);
 
             await _transactionRepository.UpdateAsync(transaction);
 

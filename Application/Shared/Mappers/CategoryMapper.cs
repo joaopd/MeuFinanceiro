@@ -6,11 +6,5 @@ namespace Application.Shared.Mappers;
 public static class CategoryMapper
 {
     public static CategoryResponseDto ToDto(this Category category)
-    {
-        return new CategoryResponseDto
-        {
-            Id = category.Id,
-            Name = category.Name,
-        };
-    }
+        => new CategoryResponseDto(category.Id, category.Name);
 }

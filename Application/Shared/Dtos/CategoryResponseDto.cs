@@ -1,7 +1,3 @@
 ﻿namespace Application.Shared.Dtos;
 
-public class CategoryResponseDto
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-}
+public record CategoryResponseDto(Guid Id, string Name);

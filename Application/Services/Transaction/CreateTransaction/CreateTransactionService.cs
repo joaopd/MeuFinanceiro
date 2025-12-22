@@ -42,7 +42,6 @@ public class CreateTransactionService : ICreateTransactionService
             {
                 var transactionDate = request.TransactionDate.AddMonths(i);
 
-                // No loop de criação:
                 var transaction = new Domain.Entities.Transaction(
                     request.UserId,
                     request.CategoryId,
@@ -54,7 +53,7 @@ public class CreateTransactionService : ICreateTransactionService
                     i + 1,
                     request.TotalInstallments,
                     request.IsFixed,
-                    false,
+                    request.IsPaid,
                     null,
                     request.Observation
                 );

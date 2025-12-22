@@ -59,9 +59,47 @@ public class Transaction : BaseEntity
         Observation = observation;
     }
     
-    public void SetPaymentStatus(bool isPaid, Guid updatedBy)
+    public Transaction(
+        Guid id,
+        Guid userId,
+        Guid categoryId,
+        decimal amount,
+        DateTime transactionDate,
+        TransactionType transactionType,
+        Guid? cardId,
+        PaymentMethod? paymentMethod,
+        int installmentNumber,
+        int totalInstallments,
+        bool isFixed,
+        bool isPaid,
+        Guid? fixedExpenseId = null,
+        string? observation = null)
     {
+        if (amount <= 0)
+            throw new ArgumentException("Amount must be greater than zero");
+
+        if (cardId.HasValue && paymentMethod is null)
+            throw new ArgumentException("Payment method is required when card is informed");
+
+        Id = id;
+        UserId = userId;
+        CategoryId = categoryId;
+        Amount = amount;
+        TransactionDate = transactionDate;
+        TransactionType = transactionType;
+        CardId = cardId;
+        PaymentMethod = paymentMethod;
+        InstallmentNumber = installmentNumber;
+        TotalInstallments = totalInstallments;
+        IsFixed = isFixed;
         IsPaid = isPaid;
+        FixedExpenseId = fixedExpenseId;
+        Observation = observation;
+    }
+    
+    public void SetPaymentStatus(Guid updatedBy)
+    {
+        IsPaid = !IsPaid;
         Touch(updatedBy);
     }
     

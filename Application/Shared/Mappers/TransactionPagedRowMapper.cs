@@ -8,6 +8,7 @@ public static class TransactionPagedRowMapper
     public static Transaction ToTransaction(this TransactionPagedRow row)
     {
         return new Transaction(
+            row.Id,
             row.UserId,
             row.CategoryId,
             row.Amount,

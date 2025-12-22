@@ -14,4 +14,5 @@ public class CreateTransactionRequestDto
     public  int TotalInstallments  { get; set; }
     public string? Observation { get; set; } 
     public bool IsFixed { get; set; }
+    public bool IsPaid { get; set; }
 }

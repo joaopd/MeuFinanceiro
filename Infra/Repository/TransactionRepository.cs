@@ -98,6 +98,7 @@ public class TransactionRepository : ITransactionRepository
                 entity.Amount, 
                 entity.TransactionDate,
                 entity.Observation,
+                entity.IsPaid,
                 entity.UpdatedAt,
                 entity.UpdatedBy
             });

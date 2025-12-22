@@ -22,10 +22,7 @@ public class TogglePaymentStatusEndpoint : IEndpoint
         [FromBody] TogglePaymentStatusRequestDto request,
         [FromServices] ITogglePaymentStatusService service)
     {
-        if (id != request.TransactionId)
-            return Results.BadRequest("ID mismatch");
-
-        var result = await service.ExecuteAsync(request.TransactionId, request.IsPaid, request.UpdatedBy);
+       var result = await service.ExecuteAsync(id, request.UpdatedBy);
 
         if (result.IsFailed)
             return result.ToProblemDetails();

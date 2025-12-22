@@ -7,5 +7,5 @@ namespace Application.Services.Transaction.TogglePaymentStatus;
 
 public interface ITogglePaymentStatusService
 {
-    Task<Result> ExecuteAsync(Guid transactionId, bool isPaid, Guid updatedBy);
+    Task<Result> ExecuteAsync(Guid transactionId, Guid updatedBy);
 }

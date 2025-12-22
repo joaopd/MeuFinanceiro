@@ -17,7 +17,9 @@ public static class TransactionMapper
             TransactionType = transaction.TransactionType,
             CardId = transaction.CardId,
             PaymentMethod = transaction.PaymentMethod,
-            IsFixed = transaction.IsFixed
+            IsFixed = transaction.IsFixed,
+            Observation = transaction.Observation,
+            IsPaid = transaction.IsPaid
         };
     }
 }

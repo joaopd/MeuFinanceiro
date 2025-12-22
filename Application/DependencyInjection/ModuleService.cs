@@ -4,6 +4,7 @@ using Application.Services.Card.GetFamilyCards;
 using Application.Services.Card.GetUserCards;
 using Application.Services.Card.UpdateCard;
 using Application.Services.Category.CreateCategory;
+using Application.Services.Category.GetAllCategories;
 using Application.Services.Dashboard.GetDashboardService;
 using Application.Services.FixedExpense.CreateFixedExpense;
 using Application.Services.FixedExpense.GenerateMonthly;
@@ -53,6 +54,7 @@ public static class DependencyInjection
         // Category
         // =========================
         services.AddScoped<ICreateCategoryService, CreateCategoryService>();
+        services.AddScoped<IGetAllCategoriesService, GetAllCategoriesService>(); 
         
         // =========================
         // Services de Card
