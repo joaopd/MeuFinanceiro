@@ -21,7 +21,15 @@ public interface ITransactionRepository : IRepository<Transaction>
         int currentPage,
         int rowsPerPage,
         string? orderBy,
-        bool orderAsc
+        bool orderAsc,
+        bool includeDependents = false,
+        Guid? cardId = null
+    );
+
+    Task<decimal> GetPaidExpensesAmountAsync(
+        Guid userId,
+        DateTime startDate,
+        DateTime endDate
     );
 
 

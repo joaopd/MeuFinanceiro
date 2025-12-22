@@ -61,10 +61,20 @@ public class FirstMigration : Migration
         Create.Table("Card")
             .WithColumn(Id).AsGuid().PrimaryKey()
             .WithColumn("Name").AsString(100).NotNullable()
-            .WithColumn("PaymentMethod").AsInt16().NotNullable()
             .WithColumn("CreditLimit").AsDecimal(18, 2).Nullable()
+        
+            .WithColumn("UserId").AsGuid().NotNullable()
+            .ForeignKey("FK_Card_User", "User", Id) 
+            .WithColumn("ClosingDay").AsInt32().NotNullable()
+            .WithColumn("DueDay").AsInt32().NotNullable()
+            .WithColumn("Color").AsString(20).Nullable() 
 
             .WithCommonColumns();
+    
+        // Opcional: Criar índice para performance na busca por usuário
+        Create.Index("IX_Card_UserId")
+            .OnTable("Card")
+            .OnColumn("UserId");
     }
 
     // =======================================

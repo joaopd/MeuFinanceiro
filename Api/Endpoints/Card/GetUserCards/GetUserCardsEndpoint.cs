@@ -20,9 +20,10 @@ public class GetUserCardsEndpoint : IEndpoint
 
     private static async Task<IResult> HandleAsync(
         [FromRoute] Guid userId,
+        [FromQuery] bool includeDependents,
         [FromServices] IGetUserCardsService service)
     {
-        var result = await service.ExecuteAsync(userId);
+        var result = await service.ExecuteAsync(userId, includeDependents);
 
         if (result.IsFailed)
             return result.ToProblemDetails();

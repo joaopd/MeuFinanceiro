@@ -119,10 +119,13 @@ public class TransactionRepository : ITransactionRepository
         int currentPage,
         int rowsPerPage,
         string? orderBy,
-        bool orderAsc)
+        bool orderAsc,
+        bool includeDependents = false,
+        Guid? cardId = null)
     {
         using var conn = _connectionFactory.CreateConnection();
 
+    
         return await conn.QueryAsync<TransactionPagedRow>(
             TransactionQueries.GetByUserAndPeriodPagedWithMeta,
             new
@@ -134,9 +137,19 @@ public class TransactionRepository : ITransactionRepository
                 CurrentPage = currentPage,
                 RowsPerPage = rowsPerPage,
                 OrderBy = orderBy,
-                OrderAsc = orderAsc
+                OrderAsc = orderAsc,
+                CardId = cardId
             });
     }
+
+    public async Task<decimal> GetPaidExpensesAmountAsync(Guid userId, DateTime startDate, DateTime endDate)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.ExecuteScalarAsync<decimal>(
+            TransactionQueries.GetPaidExpensesAmount,
+            new { UserId = userId, StartDate = startDate, EndDate = endDate });
+    }
+    
     public async Task<IEnumerable<CategoryExpenseRecord>> GetExpensesByCategoryAsync(Guid userId, DateTime start, DateTime end)
     {
         using var conn = _connectionFactory.CreateConnection();

@@ -1,8 +1,7 @@
 ﻿using Application.Shared.Dtos;
 using Application.Shared.Mappers;
 using Domain.Abstractions.ErrorHandling;
-using Domain.InterfaceRepository;
-using Domain.InterfaceRepository.BaseRepository;
+using Domain.InterfaceRepository.BaseRepository; // Certifique-se que está usando o repositório correto
 using FluentResults;
 using Microsoft.Extensions.Logging;
 
@@ -21,13 +20,17 @@ public class GetUserCardsService : IGetUserCardsService
         _logger = logger;
     }
 
-    public async Task<Result<IEnumerable<CardResponseDto>>> ExecuteAsync(Guid userId)
+    public async Task<Result<IEnumerable<CardResponseDto>>> ExecuteAsync(Guid userId, bool includeDependents)
     {
         try
         {
-            _logger.LogInformation("GetUserCards started - TargetUserId: {UserId}", userId);
+            _logger.LogInformation(
+                "GetUserCards started - TargetUserId: {UserId}, IncludeDependents: {IncludeDependents}", 
+                userId, includeDependents);
 
-            var cards = await _cardRepository.GetByUserIdAsync(userId);
+            var cards = includeDependents 
+                ? await _cardRepository.GetFamilyCardsAsync(userId)
+                : await _cardRepository.GetByUserIdAsync(userId);
 
             _logger.LogInformation("GetUserCards finished - Count: {Count}", cards.Count());
 

@@ -5,5 +5,5 @@ namespace Application.Services.Card.GetUserCards;
 
 public interface IGetUserCardsService
 {
-    Task<Result<IEnumerable<CardResponseDto>>> ExecuteAsync(Guid userId);
+    Task<Result<IEnumerable<CardResponseDto>>> ExecuteAsync(Guid userId, bool includeDependents = false);
 }

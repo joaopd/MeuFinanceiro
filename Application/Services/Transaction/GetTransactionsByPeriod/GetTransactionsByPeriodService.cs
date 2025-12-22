@@ -37,17 +37,20 @@ public sealed class GetTransactionsByPeriodService
                 return Result.Fail(FinanceErrorMessage.InvalidPeriod);
 
             var rows = (await _transactionRepository
-                .GetByUserAndPeriodPagedAsync(
-                    request.UserId,
-                    request.StartDate,
-                    request.EndDate,
-                    request.TransactionType,
-                    request.CurrentPage,
-                    request.RowsPerPage,
-                    request.OrderBy,
-                    request.OrderAsc))
+                    .GetByUserAndPeriodPagedAsync(
+                        request.UserId,
+                        request.StartDate,
+                        request.EndDate,
+                        request.TransactionType,
+                        request.CurrentPage,
+                        request.RowsPerPage,
+                        request.OrderBy,
+                        request.OrderAsc,
+                        includeDependents: false,
+                        cardId: request.CardId
+                    ))
                 .ToList();
-
+            
             if (!rows.Any())
             {
                 return Result.Ok(PaginatedResult<TransactionResponseDto>.Empty());

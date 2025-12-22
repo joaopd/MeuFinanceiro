@@ -2,10 +2,12 @@
 
 public class GetDashboardResponse
 {
-    public decimal Balance { get; set; }
+    public decimal Balance { get; set; }      
+    public decimal TotalIncome { get; set; }  
+    public decimal TotalExpense { get; set; } 
+    public decimal TotalPaid { get; set; }    
     
     public List<ChartItem> ExpensesByCategory { get; set; } = [];
-
     public List<ChartItem> IncomesAndExpenses { get; set; } = [];
 }
 

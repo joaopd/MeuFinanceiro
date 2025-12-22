@@ -31,39 +31,36 @@ public class GetDashboardService : IGetDashboardService
 
             if (startDate > endDate)
                 return Result.Fail(FinanceErrorMessage.InvalidPeriod);
-
             
             var balanceTask = _transactionRepository.GetBalanceByPeriodAsync(userId, startDate, endDate);
-
-            
             var expensesTask = _transactionRepository.GetExpensesByCategoryAsync(userId, startDate, endDate);
-
-            
             var cashFlowTask = _transactionRepository.GetCashFlowAsync(userId, startDate, endDate);
+            
+            var paidExpensesTask = _transactionRepository.GetPaidExpensesAmountAsync(userId, startDate, endDate);
+
+            await Task.WhenAll(balanceTask, expensesTask, cashFlowTask, paidExpensesTask);
 
             
-            await Task.WhenAll(balanceTask, expensesTask, cashFlowTask);
-
-            var balance = balanceTask.Result;
-            var expenses = expensesTask.Result;
-            var cashFlow = cashFlowTask.Result;
-
-            var cashFlowChart = new List<ChartItem>();
-
-            var cashFlowRecords = cashFlow as CashFlowRecord[] ?? cashFlow.ToArray();
+            var cashFlowRecords = cashFlowTask.Result.ToArray();
             var income = cashFlowRecords.FirstOrDefault(x => x.TransactionType == TransactionType.INCOME)?.Total ?? 0;
-            cashFlowChart.Add(new ChartItem { Name = "Entradas", Value = income, Type = "Income" });
-
             var expense = Math.Abs(cashFlowRecords.FirstOrDefault(x => x.TransactionType == TransactionType.EXPENSE)?.Total ?? 0);
-            cashFlowChart.Add(new ChartItem { Name = "Saídas", Value = expense, Type = "Expense" });
 
+            
             var response = new GetDashboardResponse
             {
-                Balance = balance,
-                ExpensesByCategory = expenses
+                Balance = income - expense, 
+                TotalIncome = income,
+                TotalExpense = expense,
+                TotalPaid = paidExpensesTask.Result, 
+                
+                ExpensesByCategory = expensesTask.Result
                     .Select(e => new ChartItem { Name = e.Category, Value = e.Total, Type = "Expense" })
                     .ToList(),
-                IncomesAndExpenses = cashFlowChart
+                IncomesAndExpenses = new List<ChartItem> 
+                { 
+                    new() { Name = "Entradas", Value = income, Type = "Income" },
+                    new() { Name = "Saídas", Value = expense, Type = "Expense" }
+                }
             };
 
             return Result.Ok(response);

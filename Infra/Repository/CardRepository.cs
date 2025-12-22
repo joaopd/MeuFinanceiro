@@ -18,7 +18,7 @@ public class CardRepository : ICardRepository
     public async Task AddAsync(Card card)
     {
         using var conn = _connectionFactory.CreateConnection();
-        await conn.ExecuteAsync(CardQueries.Create, card);
+        await conn.ExecuteAsync(CardQueries.Insert, card);
     }
 
     public async Task UpdateAsync(Card card)
