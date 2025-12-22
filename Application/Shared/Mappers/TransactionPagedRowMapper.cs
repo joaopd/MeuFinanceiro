@@ -16,6 +16,7 @@ public static class TransactionPagedRowMapper
             row.TransactionType,
             row.CardId,
             row.PaymentMethod,
+            row.InvoiceId,
             row.InstallmentNumber,
             row.TotalInstallments,
             row.IsFixed,

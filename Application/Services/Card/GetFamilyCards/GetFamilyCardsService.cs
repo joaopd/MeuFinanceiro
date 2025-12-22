@@ -1,5 +1,4 @@
 ﻿using Application.Shared.Dtos;
-using Application.Shared.Mappers;
 using Domain.Abstractions.ErrorHandling;
 using Domain.InterfaceRepository;
 using Domain.InterfaceRepository.BaseRepository;
@@ -10,7 +9,7 @@ namespace Application.Services.Card.GetFamilyCards;
 
 public class GetFamilyCardsService(
     ICardRepository cardRepository,
-    ITransactionRepository transactionRepository,
+    IInvoiceRepository invoiceRepository,
     ILogger<GetFamilyCardsService> logger)
     : IGetFamilyCardsService
 {
@@ -18,55 +17,59 @@ public class GetFamilyCardsService(
     {
         try
         {
-            logger.LogInformation("GetFamilyCards started - UserId: {UserId}", userId);
+            logger.LogInformation(
+                "GetFamilyCards started - UserId: {UserId}", userId);
 
             var cards = await cardRepository.GetFamilyCardsAsync(userId);
-
-            logger.LogInformation("GetFamilyCards finished - Count: {Count}", cards.Count());
-            
             var today = DateTime.UtcNow.Date;
-            
-            var cardDtos = new List<CardResponseDto>();
-            
+
+            var result = new List<CardResponseDto>();
+
             foreach (var card in cards)
             {
-                
-                DateTime invoiceStart, invoiceEnd;
-                
-                var closingThisMonth = new DateTime(today.Year, today.Month, 
-                    Math.Min(card.ClosingDay, DateTime.DaysInMonth(today.Year, today.Month)));
+                var referenceDate = ResolveInvoiceReferenceDate(today, card.ClosingDay);
 
-                if (today >= closingThisMonth)
-                {
-                    invoiceStart = closingThisMonth; 
-                    invoiceEnd = closingThisMonth.AddMonths(1);
-                }
-                else
-                {
-                    invoiceStart = closingThisMonth.AddMonths(-1);
-                    invoiceEnd = closingThisMonth;
-                }
-                
-                var debt = await transactionRepository.GetCreditCardInvoiceSumAsync(card.Id, invoiceStart, invoiceEnd);
+                var invoice = await invoiceRepository
+                    .GetByCardAndDateAsync(card.Id, referenceDate);
 
-                cardDtos.Add(new CardResponseDto(
+                result.Add(new CardResponseDto(
                     card.Id,
                     card.Name,
                     card.CreditLimit,
-                    debt,
+                    invoice?.TotalAmount ?? 0,
+                    invoice?.IsPaid ?? false,
                     card.UserId,
                     card.ClosingDay,
                     card.DueDay,
                     card.Color
                 ));
             }
-            
-            return Result.Ok((IEnumerable<CardResponseDto>)cardDtos);
+
+            logger.LogInformation(
+                "GetFamilyCards finished - Count: {Count}", result.Count);
+
+            return Result.Ok((IEnumerable<CardResponseDto>)result);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error fetching family cards for UserId: {UserId}", userId);
+            logger.LogError(ex,
+                "Error fetching family cards for UserId: {UserId}", userId);
+
             return Result.Fail(FinanceErrorMessage.DatabaseError);
         }
+    }
+
+    private static DateTime ResolveInvoiceReferenceDate(
+        DateTime date,
+        int closingDay)
+    {
+        var closingThisMonth = new DateTime(
+            date.Year,
+            date.Month,
+            Math.Min(closingDay, DateTime.DaysInMonth(date.Year, date.Month)));
+
+        return date >= closingThisMonth
+            ? new DateTime(date.Year, date.Month, 1)
+            : new DateTime(date.AddMonths(-1).Year, date.AddMonths(-1).Month, 1);
     }
 }

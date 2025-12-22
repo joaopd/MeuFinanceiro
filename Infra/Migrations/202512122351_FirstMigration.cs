@@ -1,37 +1,30 @@
 ﻿using FluentMigrator;
-using FluentMigrator.Builders.Create.Table;
 using Infra.Migrations;
 
 namespace Infra.Database.Migrations;
 
-[Migration(202512122351)]
+[Migration(202512230001)]
 public class FirstMigration : Migration
 {
-    // ============================
-    // COLUNAS PADRÃO
-    // ============================
     private const string Id = "Id";
-    private const string CreatedAt = "CreatedAt";
-    private const string UpdatedAt = "UpdatedAt";
-    private const string CreatedBy = "CreatedBy";
-    private const string UpdatedBy = "UpdatedBy";
-    private const string IsDeleted = "IsDeleted";
 
     public override void Up()
     {
         CreateUser();
-        CreateCard();
         CreateCategory();
+        CreateCard();
         CreateFixedExpense();
+        CreateInvoice();
         CreateTransaction();
     }
 
     public override void Down()
     {
         Delete.Table("Transaction");
+        Delete.Table("Invoice");
         Delete.Table("FixedExpense");
-        Delete.Table("Category");
         Delete.Table("Card");
+        Delete.Table("Category");
         Delete.Table("User");
     }
 
@@ -45,12 +38,22 @@ public class FirstMigration : Migration
             .WithColumn("Name").AsString(150).NotNullable()
             .WithColumn("Email").AsString(150).NotNullable()
             .WithColumn("ParentUserId").AsGuid().Nullable()
-
             .WithCommonColumns();
 
         Create.Index("IX_User_ParentUserId")
             .OnTable("User")
             .OnColumn("ParentUserId");
+    }
+
+    // =======================================
+    // CATEGORY
+    // =======================================
+    private void CreateCategory()
+    {
+        Create.Table("Category")
+            .WithColumn(Id).AsGuid().PrimaryKey()
+            .WithColumn("Name").AsString(100).NotNullable()
+            .WithCommonColumns();
     }
 
     // =======================================
@@ -62,31 +65,16 @@ public class FirstMigration : Migration
             .WithColumn(Id).AsGuid().PrimaryKey()
             .WithColumn("Name").AsString(100).NotNullable()
             .WithColumn("CreditLimit").AsDecimal(18, 2).Nullable()
-        
             .WithColumn("UserId").AsGuid().NotNullable()
-            .ForeignKey("FK_Card_User", "User", Id) 
+                .ForeignKey("FK_Card_User", "User", Id)
             .WithColumn("ClosingDay").AsInt32().NotNullable()
             .WithColumn("DueDay").AsInt32().NotNullable()
-            .WithColumn("Color").AsString(20).Nullable() 
-
+            .WithColumn("Color").AsString(20).Nullable()
             .WithCommonColumns();
-    
-        // Opcional: Criar índice para performance na busca por usuário
+
         Create.Index("IX_Card_UserId")
             .OnTable("Card")
             .OnColumn("UserId");
-    }
-
-    // =======================================
-    // CATEGORY
-    // =======================================
-    private void CreateCategory()
-    {
-        Create.Table("Category")
-            .WithColumn(Id).AsGuid().PrimaryKey()
-            .WithColumn("Name").AsString(100).NotNullable()
-            // Removido ExpenseType
-            .WithCommonColumns();
     }
 
     // =======================================
@@ -107,7 +95,6 @@ public class FirstMigration : Migration
                 .ForeignKey("FK_FixedExpense_Category", "Category", Id)
             .WithColumn("CardId").AsGuid().Nullable()
                 .ForeignKey("FK_FixedExpense_Card", "Card", Id)
-
             .WithCommonColumns();
 
         Create.Index("IX_FixedExpense_UserId")
@@ -120,31 +107,63 @@ public class FirstMigration : Migration
     }
 
     // =======================================
+    // INVOICE
+    // =======================================
+    private void CreateInvoice()
+    {
+        Create.Table("Invoice")
+            .WithColumn(Id).AsGuid().PrimaryKey()
+            .WithColumn("CardId").AsGuid().NotNullable()
+                .ForeignKey("FK_Invoice_Card", "Card", Id)
+            .WithColumn("ReferenceDate").AsDate().NotNullable()
+            .WithColumn("DueDate").AsDate().NotNullable()
+            .WithColumn("TotalAmount").AsDecimal(18, 2).NotNullable().WithDefaultValue(0)
+            .WithColumn("IsPaid").AsBoolean().NotNullable().WithDefaultValue(false)
+            .WithCommonColumns();
+
+        Create.Index("IX_Invoice_Card_ReferenceDate")
+            .OnTable("Invoice")
+            .OnColumn("CardId").Ascending()
+            .OnColumn("ReferenceDate").Ascending();
+    }
+
+    // =======================================
     // TRANSACTION
     // =======================================
     private void CreateTransaction()
     {
         Create.Table("Transaction")
             .WithColumn(Id).AsGuid().PrimaryKey()
+
             .WithColumn("UserId").AsGuid().NotNullable()
-            .ForeignKey("FK_Transaction_User", "User", Id)
+                .ForeignKey("FK_Transaction_User", "User", Id)
+
             .WithColumn("CategoryId").AsGuid().NotNullable()
-            .ForeignKey("FK_Transaction_Category", "Category", Id)
+                .ForeignKey("FK_Transaction_Category", "Category", Id)
+
             .WithColumn("Amount").AsDecimal(18, 2).NotNullable()
             .WithColumn("TransactionDate").AsDateTime().NotNullable()
             .WithColumn("TransactionType").AsInt16().NotNullable()
-            .WithColumn("PaymentMethod").AsInt16().NotNullable()
-            
-            .WithColumn("CardId").AsGuid().Nullable()
-            .ForeignKey("FK_Transaction_Card", "Card", Id) 
+            .WithColumn("PaymentMethod").AsInt16().Nullable()
 
-            .WithColumn("InstallmentNumber").AsInt32().Nullable()
-            .WithColumn("TotalInstallments").AsInt32().Nullable()
-            
+            .WithColumn("CardId").AsGuid().Nullable()
+                .ForeignKey("FK_Transaction_Card", "Card", Id)
+
+            .WithColumn("InvoiceId").AsGuid().Nullable()
+                .ForeignKey("FK_Transaction_Invoice", "Invoice", Id)
+
+            .WithColumn("InstallmentNumber").AsInt32().NotNullable().WithDefaultValue(1)
+            .WithColumn("TotalInstallments").AsInt32().NotNullable().WithDefaultValue(1)
+
+            .WithColumn("IsFixed").AsBoolean().NotNullable().WithDefaultValue(false)
+            .WithColumn("FixedExpenseId").AsGuid().Nullable()
+                .ForeignKey("FK_Transaction_FixedExpense", "FixedExpense", Id)
+
             .WithColumn("IsPaid").AsBoolean().NotNullable().WithDefaultValue(false)
-            
+            .WithColumn("Observation").AsString(500).Nullable()
+
             .WithCommonColumns();
-        
+
         Create.Index("IX_Transaction_UserId")
             .OnTable("Transaction")
             .OnColumn("UserId");
@@ -152,5 +171,9 @@ public class FirstMigration : Migration
         Create.Index("IX_Transaction_Date")
             .OnTable("Transaction")
             .OnColumn("TransactionDate");
+
+        Create.Index("IX_Transaction_InvoiceId")
+            .OnTable("Transaction")
+            .OnColumn("InvoiceId");
     }
 }

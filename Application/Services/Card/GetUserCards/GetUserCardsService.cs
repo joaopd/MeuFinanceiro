@@ -1,7 +1,5 @@
 ﻿using Application.Shared.Dtos;
-using Application.Shared.Mappers;
 using Domain.Abstractions.ErrorHandling;
-using Domain.Entities; 
 using Domain.InterfaceRepository;
 using Domain.InterfaceRepository.BaseRepository;
 using FluentResults;
@@ -9,59 +7,38 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Card.GetUserCards;
 
-public class GetUserCardsService : IGetUserCardsService
+public class GetUserCardsService(
+    ICardRepository cardRepository,
+    IInvoiceRepository invoiceRepository,
+    ILogger<GetUserCardsService> logger)
+    : IGetUserCardsService
 {
-    private readonly ICardRepository _cardRepository; 
-    private readonly ITransactionRepository _transactionRepository;
-    private readonly ILogger<GetUserCardsService> _logger;
-
-    public GetUserCardsService(
-        ICardRepository cardRepository, ITransactionRepository transactionRepository,
-        ILogger<GetUserCardsService> logger)
-    {
-        _cardRepository = cardRepository;
-        _transactionRepository = transactionRepository;
-        _logger = logger;
-    }
-
-    public async Task<Result<IEnumerable<CardResponseDto>>> ExecuteAsync(Guid userId, bool includeDependents)
+    public async Task<Result<IEnumerable<CardResponseDto>>> ExecuteAsync(
+        Guid userId,
+        bool includeDependents)
     {
         try
         {
-            var cards = includeDependents 
-                ? await _cardRepository.GetFamilyCardsAsync(userId)
-                : await _cardRepository.GetByUserIdAsync(userId);
+            var cards = includeDependents
+                ? await cardRepository.GetFamilyCardsAsync(userId)
+                : await cardRepository.GetByUserIdAsync(userId);
 
-            var cardDtos = new List<CardResponseDto>(); 
-            
             var today = DateTime.UtcNow.Date;
-            
+            var result = new List<CardResponseDto>();
+
             foreach (var card in cards)
             {
-                
-                DateTime invoiceStart, invoiceEnd;
-                
-                var closingThisMonth = new DateTime(today.Year, today.Month, 
-                    Math.Min(card.ClosingDay, DateTime.DaysInMonth(today.Year, today.Month)));
+                var referenceDate = ResolveInvoiceReferenceDate(today, card.ClosingDay);
 
-                if (today >= closingThisMonth)
-                {
-                    invoiceStart = closingThisMonth; 
-                    invoiceEnd = closingThisMonth.AddMonths(1);
-                }
-                else
-                {
-                    invoiceStart = closingThisMonth.AddMonths(-1);
-                    invoiceEnd = closingThisMonth;
-                }
-                
-                var debt = await _transactionRepository.GetCreditCardInvoiceSumAsync(card.Id, invoiceStart, invoiceEnd);
+                var invoice = await invoiceRepository
+                    .GetByCardAndDateAsync(card.Id, referenceDate);
 
-                cardDtos.Add(new CardResponseDto(
+                result.Add(new CardResponseDto(
                     card.Id,
                     card.Name,
                     card.CreditLimit,
-                    debt,
+                    invoice?.TotalAmount ?? 0,
+                    invoice?.IsPaid ?? false,
                     card.UserId,
                     card.ClosingDay,
                     card.DueDay,
@@ -69,12 +46,26 @@ public class GetUserCardsService : IGetUserCardsService
                 ));
             }
 
-            return Result.Ok((IEnumerable<CardResponseDto>)cardDtos);
+            return Result.Ok((IEnumerable<CardResponseDto>)result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching user cards");
+            logger.LogError(ex, "Error fetching user cards");
             return Result.Fail(FinanceErrorMessage.DatabaseError);
         }
+    }
+
+    private static DateTime ResolveInvoiceReferenceDate(
+        DateTime date,
+        int closingDay)
+    {
+        var closingThisMonth = new DateTime(
+            date.Year,
+            date.Month,
+            Math.Min(closingDay, DateTime.DaysInMonth(date.Year, date.Month)));
+
+        return date >= closingThisMonth
+            ? new DateTime(date.Year, date.Month, 1)
+            : new DateTime(date.AddMonths(-1).Year, date.AddMonths(-1).Month, 1);
     }
 }

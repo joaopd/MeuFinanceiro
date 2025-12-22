@@ -7,30 +7,22 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Transaction.UpdateTransaction;
 
-public class UpdateTransactionService : IUpdateTransactionService
+public class UpdateTransactionService(
+    ITransactionRepository transactionRepository,
+    ILogger<UpdateTransactionService> logger)
+    : IUpdateTransactionService
 {
-    private readonly ITransactionRepository _transactionRepository;
-    private readonly ILogger<UpdateTransactionService> _logger;
-
-    public UpdateTransactionService(
-        ITransactionRepository transactionRepository,
-        ILogger<UpdateTransactionService> logger)
-    {
-        _transactionRepository = transactionRepository;
-        _logger = logger;
-    }
-
     public async Task<Result<TransactionResponseDto>> ExecuteAsync(
         UpdateTransactionRequestDto request)
     {
         try
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "UpdateTransaction started - TransactionId: {TransactionId}",
                 request.TransactionId);
 
             var transaction =
-                await _transactionRepository.GetByIdAsync(request.TransactionId);
+                await transactionRepository.GetByIdAsync(request.TransactionId);
 
             if (transaction is null)
             {
@@ -57,9 +49,9 @@ public class UpdateTransactionService : IUpdateTransactionService
                 transaction.UpdateObservation(request.Observation, request.UpdatedBy);
             }
             
-            await _transactionRepository.UpdateAsync(transaction);
+            await transactionRepository.UpdateAsync(transaction);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "UpdateTransaction finished successfully - TransactionId: {TransactionId}",
                 transaction.Id);
 
@@ -67,7 +59,7 @@ public class UpdateTransactionService : IUpdateTransactionService
         }
         catch (Exception ex)
         {
-            _logger.LogError(
+            logger.LogError(
                 ex,
                 "Error while updating transaction - TransactionId: {TransactionId}",
                 request.TransactionId);

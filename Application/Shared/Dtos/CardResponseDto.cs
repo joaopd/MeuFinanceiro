@@ -5,8 +5,9 @@ public record CardResponseDto(
     string Name,
     decimal CreditLimit,
     decimal CurrentInvoiceAmount,
+    bool IsCurrentInvoicePaid,
     Guid UserId,
     int ClosingDay,
     int DueDay,
-    string Color 
+    string Color
 );

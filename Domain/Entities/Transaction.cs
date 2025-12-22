@@ -9,6 +9,7 @@ public class Transaction : BaseEntity
     public decimal Amount { get; private set; }
     public DateTime TransactionDate { get; private set; }
     public TransactionType TransactionType { get; private set; }
+
     public Guid? InvoiceId { get; private set; }
     public Guid? CardId { get; private set; }
     public PaymentMethod? PaymentMethod { get; private set; }
@@ -19,9 +20,9 @@ public class Transaction : BaseEntity
     public bool IsFixed { get; private set; }
     public bool IsPaid { get; private set; }
     public Guid? FixedExpenseId { get; private set; }
-    public string? Observation { get; private set; } 
-    
-    public Transaction() { }
+    public string? Observation { get; private set; }
+
+    protected Transaction() { }
 
     public Transaction(
         Guid userId,
@@ -31,6 +32,7 @@ public class Transaction : BaseEntity
         TransactionType transactionType,
         Guid? cardId,
         PaymentMethod? paymentMethod,
+        Guid? invoiceId,
         int installmentNumber,
         int totalInstallments,
         bool isFixed,
@@ -38,12 +40,9 @@ public class Transaction : BaseEntity
         Guid? fixedExpenseId = null,
         string? observation = null)
     {
-        if (amount <= 0)
-            throw new ArgumentException("Amount must be greater than zero");
+        Validate(amount, cardId, paymentMethod, installmentNumber, totalInstallments);
 
-        if (cardId.HasValue && paymentMethod is null)
-            throw new ArgumentException("Payment method is required when card is informed");
-
+        Id = Guid.NewGuid();
         UserId = userId;
         CategoryId = categoryId;
         Amount = amount;
@@ -51,6 +50,7 @@ public class Transaction : BaseEntity
         TransactionType = transactionType;
         CardId = cardId;
         PaymentMethod = paymentMethod;
+        InvoiceId = invoiceId;
         InstallmentNumber = installmentNumber;
         TotalInstallments = totalInstallments;
         IsFixed = isFixed;
@@ -58,7 +58,7 @@ public class Transaction : BaseEntity
         FixedExpenseId = fixedExpenseId;
         Observation = observation;
     }
-    
+
     public Transaction(
         Guid id,
         Guid userId,
@@ -68,6 +68,7 @@ public class Transaction : BaseEntity
         TransactionType transactionType,
         Guid? cardId,
         PaymentMethod? paymentMethod,
+        Guid? invoiceId,
         int installmentNumber,
         int totalInstallments,
         bool isFixed,
@@ -75,11 +76,7 @@ public class Transaction : BaseEntity
         Guid? fixedExpenseId = null,
         string? observation = null)
     {
-        if (amount <= 0)
-            throw new ArgumentException("Amount must be greater than zero");
-
-        if (cardId.HasValue && paymentMethod is null)
-            throw new ArgumentException("Payment method is required when card is informed");
+        Validate(amount, cardId, paymentMethod, installmentNumber, totalInstallments);
 
         Id = id;
         UserId = userId;
@@ -89,6 +86,7 @@ public class Transaction : BaseEntity
         TransactionType = transactionType;
         CardId = cardId;
         PaymentMethod = paymentMethod;
+        InvoiceId = invoiceId;
         InstallmentNumber = installmentNumber;
         TotalInstallments = totalInstallments;
         IsFixed = isFixed;
@@ -96,13 +94,33 @@ public class Transaction : BaseEntity
         FixedExpenseId = fixedExpenseId;
         Observation = observation;
     }
-    
+
+    private static void Validate(
+        decimal amount,
+        Guid? cardId,
+        PaymentMethod? paymentMethod,
+        int installmentNumber,
+        int totalInstallments)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("Amount must be greater than zero");
+
+        if (cardId.HasValue && paymentMethod is null)
+            throw new ArgumentException("Payment method is required when card is informed");
+
+        if (totalInstallments < 1)
+            throw new ArgumentException("TotalInstallments must be at least 1");
+
+        if (installmentNumber < 1 || installmentNumber > totalInstallments)
+            throw new ArgumentException("Invalid installment number");
+    }
+
     public void SetPaymentStatus(Guid updatedBy)
     {
         IsPaid = !IsPaid;
         Touch(updatedBy);
     }
-    
+
     public void ChangeAmount(decimal newAmount, Guid updatedBy)
     {
         if (newAmount <= 0)
@@ -111,18 +129,19 @@ public class Transaction : BaseEntity
         Amount = newAmount;
         Touch(updatedBy);
     }
-    
+
     public void ChangeDate(DateTime newDate, Guid updatedBy)
     {
         TransactionDate = newDate;
         Touch(updatedBy);
     }
+
     public void UpdateObservation(string? observation, Guid updatedBy)
     {
         Observation = observation;
         Touch(updatedBy);
     }
-    
+
     public void AttachToInvoice(Guid invoiceId, Guid updatedBy)
     {
         if (InvoiceId.HasValue)
@@ -131,5 +150,4 @@ public class Transaction : BaseEntity
         InvoiceId = invoiceId;
         Touch(updatedBy);
     }
-
 }

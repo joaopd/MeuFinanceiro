@@ -8,24 +8,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Card.CreateCard;
 
-public class CreateCardService : ICreateCardService
+public class CreateCardService(
+    ICardRepository cardRepository,
+    ILogger<CreateCardService> logger)
+    : ICreateCardService
 {
-    private readonly ICardRepository _cardRepository;
-    private readonly ILogger<CreateCardService> _logger;
-
-    public CreateCardService(
-        ICardRepository cardRepository,
-        ILogger<CreateCardService> logger)
-    {
-        _cardRepository = cardRepository;
-        _logger = logger;
-    }
-
     public async Task<Result<CardResponseDto>> ExecuteAsync(CreateCardRequestDto request)
     {
         try
         {
-            _logger.LogInformation("CreateCard started - Name: {Name}", request.Name);
+            logger.LogInformation("CreateCard started - Name: {Name}", request.Name);
 
             string color = string.IsNullOrWhiteSpace(request.Color) ? "#000000" : request.Color;
 
@@ -38,14 +30,14 @@ public class CreateCardService : ICreateCardService
                 color
             );
 
-            await _cardRepository.AddAsync(card);
+            await cardRepository.AddAsync(card);
         
-            _logger.LogInformation("CreateCard finished - Id: {Id}", card.Id);
+            logger.LogInformation("CreateCard finished - Id: {Id}", card.Id);
             return Result.Ok(card.ToDto());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating card");
+            logger.LogError(ex, "Error creating card");
             return Result.Fail(FinanceErrorMessage.DatabaseError);
         }
     }

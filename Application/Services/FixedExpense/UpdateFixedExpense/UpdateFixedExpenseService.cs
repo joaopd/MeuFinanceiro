@@ -7,24 +7,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.FixedExpense.UpdateFixedExpense;
 
-public class UpdateFixedExpenseService : IUpdateFixedExpenseService
+public class UpdateFixedExpenseService(
+    IFixedExpenseRepository fixedExpenseRepository,
+    ILogger<UpdateFixedExpenseService> logger) : IUpdateFixedExpenseService
 {
-    private readonly IFixedExpenseRepository _fixedExpenseRepository;
-    private readonly ILogger<UpdateFixedExpenseService> _logger;
-
-    public UpdateFixedExpenseService(
-        IFixedExpenseRepository fixedExpenseRepository,
-        ILogger<UpdateFixedExpenseService> logger)
-    {
-        _fixedExpenseRepository = fixedExpenseRepository;
-        _logger = logger;
-    }
-
     public async Task<Result<FixedExpenseResponseDto>> ExecuteAsync(UpdateFixedExpenseRequestDto request)
     {
         try
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "UpdateFixedExpense started - UserId: {UserId}, Description: {Desc}",
                 request.UserId,
                 request.Description);
@@ -45,9 +36,9 @@ public class UpdateFixedExpenseService : IUpdateFixedExpenseService
                 request.EndDate
             );
 
-            await _fixedExpenseRepository.UpdateAsync(fixedExpense);
+            await fixedExpenseRepository.UpdateAsync(fixedExpense);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "UpdateFixedExpense finished successfully - Id: {Id}",
                 fixedExpense.Id);
 
@@ -55,12 +46,12 @@ public class UpdateFixedExpenseService : IUpdateFixedExpenseService
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid data for FixedExpense");
+            logger.LogWarning(ex, "Invalid data for FixedExpense");
             return Result.Fail(FinanceErrorMessage.InvalidFixedExpenseData);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating fixed expense");
+            logger.LogError(ex, "Error creating fixed expense");
             return Result.Fail(FinanceErrorMessage.DatabaseError);
         }
     }

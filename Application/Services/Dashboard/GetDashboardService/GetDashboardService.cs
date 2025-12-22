@@ -7,19 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Dashboard.GetDashboardService;
 
-public class GetDashboardService : IGetDashboardService
+public class GetDashboardService(
+    ITransactionRepository transactionRepository,
+    ILogger<GetDashboardService> logger
+    ) : IGetDashboardService
 {
-    private readonly ITransactionRepository _transactionRepository;
-    private readonly ILogger<GetDashboardService> _logger;
-
-    public GetDashboardService(
-        ITransactionRepository transactionRepository,
-        ILogger<GetDashboardService> logger)
-    {
-        _transactionRepository = transactionRepository;
-        _logger = logger;
-    }
-
     public async Task<Result<GetDashboardResponse>> ExecuteAsync(
         Guid userId, 
         DateTime startDate, 
@@ -27,16 +19,16 @@ public class GetDashboardService : IGetDashboardService
     {
         try
         {
-            _logger.LogInformation("GetDashboard started...");
+            logger.LogInformation("GetDashboard started...");
 
             if (startDate > endDate)
                 return Result.Fail(FinanceErrorMessage.InvalidPeriod);
             
-            var balanceTask = _transactionRepository.GetBalanceByPeriodAsync(userId, startDate, endDate);
-            var expensesTask = _transactionRepository.GetExpensesByCategoryAsync(userId, startDate, endDate);
-            var cashFlowTask = _transactionRepository.GetCashFlowAsync(userId, startDate, endDate);
+            var balanceTask = transactionRepository.GetBalanceByPeriodAsync(userId, startDate, endDate);
+            var expensesTask = transactionRepository.GetExpensesByCategoryAsync(userId, startDate, endDate);
+            var cashFlowTask = transactionRepository.GetCashFlowAsync(userId, startDate, endDate);
             
-            var paidExpensesTask = _transactionRepository.GetPaidExpensesAmountAsync(userId, startDate, endDate);
+            var paidExpensesTask = transactionRepository.GetPaidExpensesAmountAsync(userId, startDate, endDate);
 
             await Task.WhenAll(balanceTask, expensesTask, cashFlowTask, paidExpensesTask);
 
@@ -67,7 +59,7 @@ public class GetDashboardService : IGetDashboardService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting dashboard");
+            logger.LogError(ex, "Error getting dashboard");
             return Result.Fail(FinanceErrorMessage.DatabaseError);
         }
     }

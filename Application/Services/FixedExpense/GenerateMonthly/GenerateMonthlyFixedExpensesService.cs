@@ -1,5 +1,4 @@
-﻿using Domain.Entities;
-using Domain.InterfaceRepository;
+﻿using Domain.InterfaceRepository;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 
@@ -26,60 +25,67 @@ public class GenerateMonthlyFixedExpensesService : IGenerateMonthlyFixedExpenses
         try
         {
             _logger.LogInformation(
-                "GenerateMonthlyFixedExpenses started - UserId: {UserId}, Period: {Month}/{Year}", 
+                "GenerateMonthlyFixedExpenses started - UserId: {UserId}, Period: {Month}/{Year}",
                 userId, month, year);
 
             var referenceDate = new DateTime(year, month, 1);
             var activeFixedExpenses = await _fixedRepository.GetActiveAsync(userId, referenceDate);
-            
-            int count = 0;
+
             var newTransactions = new List<Domain.Entities.Transaction>();
+            var count = 0;
 
             foreach (var fixedItem in activeFixedExpenses)
             {
-                bool alreadyGenerated = await _transactionRepository
+                var alreadyGenerated = await _transactionRepository
                     .ExistsByFixedExpenseAsync(fixedItem.Id, month, year);
 
-                if (alreadyGenerated) continue;
+                if (alreadyGenerated)
+                    continue;
 
-                var day = Math.Min(fixedItem.StartDate.Day, DateTime.DaysInMonth(year, month));
+                var day = Math.Min(
+                    fixedItem.StartDate.Day,
+                    DateTime.DaysInMonth(year, month));
+
                 var transactionDate = new DateTime(year, month, day);
 
                 var transaction = new Domain.Entities.Transaction(
-                        userId: userId,
-                        categoryId: fixedItem.CategoryId,
-                        observation: fixedItem.Description,
-                        amount: fixedItem.Amount,
-                        transactionDate: transactionDate,
-                        transactionType: Domain.Enums.TransactionType.EXPENSE,
-                        cardId: fixedItem.CardId,
-                        paymentMethod: fixedItem.CardId.HasValue 
-                            ? Domain.Enums.PaymentMethod.CREDIT 
-                            : Domain.Enums.PaymentMethod.CASH, 
-                        installmentNumber: 1,
-                        totalInstallments: 1,
-                        isFixed: true,
-                        isPaid: false,
-                        fixedExpenseId: fixedItem.Id
+                    userId: userId,
+                    categoryId: fixedItem.CategoryId,
+                    amount: fixedItem.Amount,
+                    transactionDate: transactionDate,
+                    transactionType: Domain.Enums.TransactionType.EXPENSE,
+
+                    // 🔒 REGRA: conta fixa NÃO é cartão
+                    cardId: null,
+                    paymentMethod: Domain.Enums.PaymentMethod.CASH,
+                    invoiceId: null,
+
+                    installmentNumber: 1,
+                    totalInstallments: 1,
+                    isFixed: true,
+                    isPaid: false,
+                    fixedExpenseId: fixedItem.Id,
+                    observation: fixedItem.Description
                 );
-                
+
                 newTransactions.Add(transaction);
                 count++;
             }
 
             if (newTransactions.Any())
-            {
                 await _transactionRepository.InsertBulkAsync(newTransactions);
-            }
 
-            _logger.LogInformation("Generated {Count} fixed transactions", count);
+            _logger.LogInformation(
+                "GenerateMonthlyFixedExpenses finished - Generated: {Count}",
+                count);
 
             return Result.Ok(count);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating monthly fixed expenses");
-            return Result.Fail(Domain.Abstractions.ErrorHandling.FinanceErrorMessage.DatabaseError);
+            return Result.Fail(
+                Domain.Abstractions.ErrorHandling.FinanceErrorMessage.DatabaseError);
         }
     }
 }

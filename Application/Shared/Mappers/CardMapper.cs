@@ -5,20 +5,25 @@ namespace Application.Shared.Mappers;
 
 public static class CardMapper
 {
-    public static CardResponseDto ToDto(this Card card, decimal currentDebt)
+    public static CardResponseDto ToDto(
+        this Card card,
+        decimal currentInvoiceAmount,
+        bool isCurrentInvoicePaid
+    )
     {
         return new CardResponseDto(
             card.Id,
             card.Name,
             card.CreditLimit,
-            currentDebt,
+            currentInvoiceAmount,
+            isCurrentInvoicePaid,
             card.UserId,
             card.ClosingDay,
             card.DueDay,
             card.Color
         );
     }
-    
+
     public static CardResponseDto ToDto(this Card card)
     {
         return new CardResponseDto(
@@ -26,6 +31,7 @@ public static class CardMapper
             card.Name,
             card.CreditLimit,
             0,
+            false,
             card.UserId,
             card.ClosingDay,
             card.DueDay,

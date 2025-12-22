@@ -8,35 +8,27 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Transaction.GetTransactionsByPeriod;
 
-public sealed class GetTransactionsByPeriodService
+public sealed class  GetTransactionsByPeriodService(
+    ITransactionRepository transactionRepository,
+    ILogger<GetTransactionsByPeriodService> logger)
     : IGetTransactionsByPeriodService
 {
-    private readonly ITransactionRepository _transactionRepository;
-    private readonly ILogger<GetTransactionsByPeriodService> _logger;
-
-    public GetTransactionsByPeriodService(
-        ITransactionRepository transactionRepository,
-        ILogger<GetTransactionsByPeriodService> logger)
-    {
-        _transactionRepository = transactionRepository;
-        _logger = logger;
-    }
-
     public async Task<Result<PaginatedResult<TransactionResponseDto>>> ExecuteAsync(
         GetTransactionsByPeriodRequest request)
     {
         try
         {
-            _logger.LogInformation(
-                "GetTransactionsByPeriod started | UserId: {UserId} | Period: {Start} - {End}",
+            logger.LogInformation(
+                "GetTransactionsByPeriod started | UserId: {UserId} | Period: {Start} - {End} | CardId: {CardId}",
                 request.UserId,
                 request.StartDate,
-                request.EndDate);
+                request.EndDate,
+                request.CardId);
 
             if (request.StartDate > request.EndDate)
                 return Result.Fail(FinanceErrorMessage.InvalidPeriod);
 
-            var rows = (await _transactionRepository
+            var rows = (await transactionRepository
                     .GetByUserAndPeriodPagedAsync(
                         request.UserId,
                         request.StartDate,
@@ -50,9 +42,12 @@ public sealed class GetTransactionsByPeriodService
                         cardId: request.CardId
                     ))
                 .ToList();
-            
+
             if (!rows.Any())
             {
+                logger.LogInformation(
+                    "GetTransactionsByPeriod finished | No transactions found");
+
                 return Result.Ok(PaginatedResult<TransactionResponseDto>.Empty());
             }
 
@@ -65,19 +60,25 @@ public sealed class GetTransactionsByPeriodService
                 CurrentPage = meta.CurrentPage,
                 RowsPerPage = meta.RowsPerPage,
                 Data = rows
-                    .Select(r => r.ToTransaction().ToDto())
+                    .Select(r =>
+                    {
+                        var transaction = r.ToTransaction();
+                        return transaction.ToDto();
+                    })
                     .ToList()
             };
 
-            _logger.LogInformation(
-                "GetTransactionsByPeriod finished successfully | TotalRows: {TotalRows}",
-                result.TotalRows);
+            logger.LogInformation(
+                "GetTransactionsByPeriod finished successfully | TotalRows: {TotalRows} | Paid: {PaidCount} | WithInvoice: {InvoiceCount}",
+                result.TotalRows,
+                result.Data.Count(t => t.IsPaid),
+                result.Data.Count(t => t.InvoiceId.HasValue));
 
             return Result.Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
+            logger.LogError(
                 ex,
                 "Error while getting transactions by period | UserId: {UserId}",
                 request.UserId);

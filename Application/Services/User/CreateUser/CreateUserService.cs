@@ -8,25 +8,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.User.CreateUser;
 
-public class CreateUserService : ICreateUserService
+public class CreateUserService(
+    IUserRepository userRepository,
+    ILogger<CreateUserService> logger)
+    : ICreateUserService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly ILogger<CreateUserService> _logger;
-
-    public CreateUserService(
-        IUserRepository userRepository,
-        ILogger<CreateUserService> logger)
-    {
-        _userRepository = userRepository;
-        _logger = logger;
-    }
-
     public async Task<Result<UserResponseDto>> ExecuteAsync(
         CreateUserRequestDto request)
     {
         try
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "CreateUser started - Name: {Name}, Email: {Email}",
                 request.Name,
                 request.Email);
@@ -43,9 +35,9 @@ public class CreateUserService : ICreateUserService
                 request.Email,
                 request.ParentUserId);
 
-            var userId = await _userRepository.InsertAsync(user);
+            var userId = await userRepository.InsertAsync(user);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "CreateUser finished successfully - UserId: {UserId}",
                 userId);
 
@@ -53,7 +45,7 @@ public class CreateUserService : ICreateUserService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while creating user");
+            logger.LogError(ex, "Error while creating user");
 
             return Result.Fail(
                 FinanceErrorMessage.DatabaseError);

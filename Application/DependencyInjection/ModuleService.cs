@@ -41,7 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IUpdateTransactionService, UpdateTransactionService>();
         services.AddScoped<IGetTransactionsByPeriodService, GetTransactionsByPeriodService>();
         services.AddScoped<ITogglePaymentStatusService, TogglePaymentStatusService>();
-        services.AddScoped<IImportInvoiceService, GeminiInvoiceService>();
+        services.AddScoped<IImportInvoiceService, ImportInvoiceService>();
 
         // =========================
         // FIXED EXPENSE

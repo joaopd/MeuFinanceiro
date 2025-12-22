@@ -12,6 +12,7 @@ public sealed class TransactionPagedRow
     public TransactionType TransactionType { get; init; }
     public Guid? CardId { get; init; }
     public PaymentMethod PaymentMethod { get; init; }
+    public Guid? InvoiceId { get; init; }
     public int InstallmentNumber { get; init; }
     public int TotalInstallments { get; init; }
     public bool IsFixed { get; init; }

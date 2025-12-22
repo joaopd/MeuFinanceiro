@@ -5,40 +5,31 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Transaction.TogglePaymentStatus;
 
-public class TogglePaymentStatusService : ITogglePaymentStatusService
+public class TogglePaymentStatusService(
+    ITransactionRepository transactionRepository,
+    ILogger<TogglePaymentStatusService> logger) : ITogglePaymentStatusService
 {
-    private readonly ITransactionRepository _transactionRepository;
-    private readonly ILogger<TogglePaymentStatusService> _logger;
-
-    public TogglePaymentStatusService(
-        ITransactionRepository transactionRepository,
-        ILogger<TogglePaymentStatusService> logger)
-    {
-        _transactionRepository = transactionRepository;
-        _logger = logger;
-    }
-
-    public async Task<Result> ExecuteAsync(Guid transactionId, Guid updatedBy)
+   public async Task<Result> ExecuteAsync(Guid transactionId, Guid updatedBy)
     {
         try
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "TogglePaymentStatus started - TransactionId: {TransactionId}",
                 transactionId);
 
-            var transaction = await _transactionRepository.GetByIdAsync(transactionId);
+            var transaction = await transactionRepository.GetByIdAsync(transactionId);
 
             if (transaction is null)
             {
-                _logger.LogWarning("Transaction not found - TransactionId: {TransactionId}", transactionId);
+                logger.LogWarning("Transaction not found - TransactionId: {TransactionId}", transactionId);
                 return Result.Fail(FinanceErrorMessage.TransactionNotFound);
             }
 
             transaction.SetPaymentStatus(updatedBy);
 
-            await _transactionRepository.UpdateAsync(transaction);
+            await transactionRepository.UpdateAsync(transaction);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "TogglePaymentStatus finished successfully - TransactionId: {TransactionId}",
                 transactionId);
 
@@ -46,7 +37,7 @@ public class TogglePaymentStatusService : ITogglePaymentStatusService
         }
         catch (Exception ex)
         {
-            _logger.LogError(
+            logger.LogError(
                 ex,
                 "Error while toggling payment status - TransactionId: {TransactionId}",
                 transactionId);

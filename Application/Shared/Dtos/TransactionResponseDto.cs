@@ -12,7 +12,10 @@ public class TransactionResponseDto
     public TransactionType TransactionType { get; set; }
     public Guid? CardId { get; set; }
     public PaymentMethod? PaymentMethod { get; set; }
+    public Guid? InvoiceId { get; set; }
+    public int InstallmentNumber { get; set; }
+    public int TotalInstallments { get; set; }
     public bool IsFixed { get; set; }
+    public bool IsPaid { get; set; }
     public string? Observation { get; set; }
-    public  bool IsPaid { get; set; }
 }
