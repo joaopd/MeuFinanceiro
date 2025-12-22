@@ -12,13 +12,23 @@ public static class FixedExpenseQueries
                                      WHERE "IsDeleted" = false;
                                  """;
 
-    public const string GetActiveByUser = """
-                                              SELECT * FROM "FixedExpense"
-                                              WHERE "UserId" = @UserId
-                                                AND "StartDate" <= @ReferenceDate
-                                                AND ("EndDate" IS NULL OR "EndDate" >= @ReferenceDate)
-                                                AND "IsDeleted" = false;
-                                          """;
+    public const string GetActiveByUser = @"
+                                    SELECT 
+                                        ""Id"", 
+                                        ""UserId"", 
+                                        ""Description"", 
+                                        ""Amount"", 
+                                        ""StartDate""::timestamp AS ""StartDate"", 
+                                        ""EndDate""::timestamp AS ""EndDate"", 
+                                        ""Recurrence"", 
+                                        ""CategoryId"", 
+                                        ""CardId"", 
+                                        ""IsDeleted""
+                                    FROM ""FixedExpense""
+                                    WHERE ""UserId"" = @UserId
+                                      AND ""StartDate"" <= @ReferenceDate
+                                      AND (""EndDate"" IS NULL OR ""EndDate"" >= @ReferenceDate)
+                                      AND ""IsDeleted"" = false;";
 
     public const string Insert = """
                                      INSERT INTO "FixedExpense" (

@@ -126,9 +126,26 @@ public class TransactionRepository : ITransactionRepository
     {
         using var conn = _connectionFactory.CreateConnection();
 
-    
+        if (!includeDependents)
+        {
+            return await conn.QueryAsync<TransactionPagedRow>(
+                TransactionQueries.GetByUserAndPeriodPagedWithMeta,
+                new
+                {
+                    UserId = userId,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    TransactionType = transactionType,
+                    CurrentPage = currentPage,
+                    RowsPerPage = rowsPerPage,
+                    OrderBy = orderBy,
+                    OrderAsc = orderAsc,
+                    CardId = cardId
+                });
+        }
+        
         return await conn.QueryAsync<TransactionPagedRow>(
-            TransactionQueries.GetByUserAndPeriodPagedWithMeta,
+            TransactionQueries.GetFamilyTransactionsPaged,
             new
             {
                 UserId = userId,

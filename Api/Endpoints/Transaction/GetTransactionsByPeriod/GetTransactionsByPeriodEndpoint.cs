@@ -31,6 +31,7 @@ public class GetTransactionsByPeriodEndpoint : IEndpoint
             EndDate = query.EndDate,
             TransactionType = query.Type,
             CardId = query.CardId,
+            IncludeDependents = query.IncludeDependents ?? false,
             CurrentPage = query.Page ?? 1,
             RowsPerPage = query.Rows ?? 10
         };
@@ -51,6 +52,7 @@ public record GetTransactionsRequestParams(
     TransactionType? Type, 
     int? Page, 
     int? Rows,
-    Guid? CardId 
+    Guid? CardId ,
+    bool? IncludeDependents
 );
 

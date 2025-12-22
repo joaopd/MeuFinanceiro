@@ -46,7 +46,7 @@ public sealed class GetTransactionsByPeriodService
                         request.RowsPerPage,
                         request.OrderBy,
                         request.OrderAsc,
-                        includeDependents: false,
+                        request.IncludeDependents,
                         cardId: request.CardId
                     ))
                 .ToList();

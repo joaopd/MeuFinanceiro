@@ -8,6 +8,8 @@ using Application.Services.Category.GetAllCategories;
 using Application.Services.Dashboard.GetDashboardService;
 using Application.Services.FixedExpense.CreateFixedExpense;
 using Application.Services.FixedExpense.GenerateMonthly;
+using Application.Services.FixedExpense.GetAllFixedExpenseByUserId;
+using Application.Services.FixedExpense.UpdateFixedExpense;
 using Application.Services.Transaction.CreateTransaction;
 using Application.Services.Transaction.GetTransactionsByPeriod;
 using Application.Services.Transaction.TogglePaymentStatus;
@@ -44,6 +46,8 @@ public static class DependencyInjection
         // =========================
         services.AddScoped<ICreateFixedExpenseService, CreateFixedExpenseService>();
         services.AddScoped<IGenerateMonthlyFixedExpensesService, GenerateMonthlyFixedExpensesService>();
+        services.AddScoped<IUpdateFixedExpenseService, UpdateFixedExpenseService>();
+        services.AddScoped<IGetAllFixedExpenseByUserIdService, GetAllFixedExpenseByUserIdService>();
 
         // =========================
         // DASHBOARD
