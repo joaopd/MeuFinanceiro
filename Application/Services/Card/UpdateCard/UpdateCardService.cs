@@ -1,32 +1,59 @@
 ﻿using Application.Shared.Dtos;
 using Application.Shared.Mappers;
 using Domain.Abstractions.ErrorHandling;
-using Domain.InterfaceRepository;
 using Domain.InterfaceRepository.BaseRepository;
 using FluentResults;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Card.UpdateCard;
 
 public class UpdateCardService : IUpdateCardService
 {
     private readonly ICardRepository _cardRepository;
+    private readonly ILogger<UpdateCardService> _logger;
 
-    public UpdateCardService(ICardRepository cardRepository)
+    public UpdateCardService(
+        ICardRepository cardRepository,
+        ILogger<UpdateCardService> logger)
     {
         _cardRepository = cardRepository;
+        _logger = logger;
     }
 
     public async Task<Result<CardResponseDto>> ExecuteAsync(UpdateCardRequestDto request)
     {
-        var card = await _cardRepository.GetByIdAsync(request.Id);
+        try
+        {
+            _logger.LogInformation("UpdateCard started - CardId: {CardId}", request.Id);
 
-        if (card is null)
-            return Result.Fail(FinanceErrorMessage.CardNotFound);
+            var card = await _cardRepository.GetByIdAsync(request.Id);
 
-        card.Update(request.Name, request.CreditLimit, request.ClosingDay, request.DueDay, request.Color);
+            if (card is null)
+            {
+                _logger.LogWarning("UpdateCard failed - Card not found: {CardId}", request.Id);
+                return Result.Fail(FinanceErrorMessage.CardNotFound);
+            }
 
-        await _cardRepository.UpdateAsync(card);
+            string colorToUpdate = string.IsNullOrWhiteSpace(request.Color) ? card.Color : request.Color;
 
-        return Result.Ok(card.ToDto());
+            card.Update(
+                request.Name, 
+                request.CreditLimit, 
+                request.ClosingDay, 
+                request.DueDay, 
+                colorToUpdate
+            );
+
+            await _cardRepository.UpdateAsync(card);
+
+            _logger.LogInformation("UpdateCard finished successfully - CardId: {CardId}", request.Id);
+
+            return Result.Ok(card.ToDto());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating card: {CardId}", request.Id);
+            return Result.Fail(FinanceErrorMessage.DatabaseError);
+        }
     }
 }

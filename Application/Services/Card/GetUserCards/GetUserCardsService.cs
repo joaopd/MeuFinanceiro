@@ -6,16 +6,16 @@ using Domain.InterfaceRepository.BaseRepository;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Services.Card.GetFamilyCards;
+namespace Application.Services.Card.GetUserCards;
 
-public class GetFamilyCardsService : IGetFamilyCardsService
+public class GetUserCardsService : IGetUserCardsService
 {
     private readonly ICardRepository _cardRepository;
-    private readonly ILogger<GetFamilyCardsService> _logger;
+    private readonly ILogger<GetUserCardsService> _logger;
 
-    public GetFamilyCardsService(
+    public GetUserCardsService(
         ICardRepository cardRepository,
-        ILogger<GetFamilyCardsService> logger)
+        ILogger<GetUserCardsService> logger)
     {
         _cardRepository = cardRepository;
         _logger = logger;
@@ -25,17 +25,17 @@ public class GetFamilyCardsService : IGetFamilyCardsService
     {
         try
         {
-            _logger.LogInformation("GetFamilyCards started - UserId: {UserId}", userId);
+            _logger.LogInformation("GetUserCards started - TargetUserId: {UserId}", userId);
 
-            var cards = await _cardRepository.GetFamilyCardsAsync(userId);
+            var cards = await _cardRepository.GetByUserIdAsync(userId);
 
-            _logger.LogInformation("GetFamilyCards finished - Count: {Count}", cards.Count());
+            _logger.LogInformation("GetUserCards finished - Count: {Count}", cards.Count());
 
             return Result.Ok(cards.Select(c => c.ToDto()));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching family cards for UserId: {UserId}", userId);
+            _logger.LogError(ex, "Error fetching user cards for UserId: {UserId}", userId);
             return Result.Fail(FinanceErrorMessage.DatabaseError);
         }
     }
