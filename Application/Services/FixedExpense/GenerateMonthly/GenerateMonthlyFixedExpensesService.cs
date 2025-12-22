@@ -46,18 +46,20 @@ public class GenerateMonthlyFixedExpensesService : IGenerateMonthlyFixedExpenses
                 var transactionDate = new DateTime(year, month, day);
 
                 var transaction = new Domain.Entities.Transaction(
-                    userId: userId,
-                    categoryId: fixedItem.CategoryId,
-                    amount: fixedItem.Amount,
-                    transactionDate: transactionDate,
-                    transactionType: Domain.Enums.TransactionType.EXPENSE,
-                    cardId: fixedItem.CardId,
-                    paymentMethod: null, 
-                    installmentNumber: 1,
-                    totalInstallments: 1,
-                    isFixed: true,
-                    isPaid: false,
-                    fixedExpenseId: fixedItem.Id
+                        userId: userId,
+                        categoryId: fixedItem.CategoryId,
+                        amount: fixedItem.Amount,
+                        transactionDate: transactionDate,
+                        transactionType: Domain.Enums.TransactionType.EXPENSE,
+                        cardId: fixedItem.CardId,
+                        paymentMethod: fixedItem.CardId.HasValue 
+                            ? Domain.Enums.PaymentMethod.CREDIT 
+                            : Domain.Enums.PaymentMethod.CASH, 
+                        installmentNumber: 1,
+                        totalInstallments: 1,
+                        isFixed: true,
+                        isPaid: false,
+                        fixedExpenseId: fixedItem.Id
                 );
                 
                 newTransactions.Add(transaction);
