@@ -122,4 +122,14 @@ public class Transaction : BaseEntity
         Observation = observation;
         Touch(updatedBy);
     }
+    
+    public void AttachToInvoice(Guid invoiceId, Guid updatedBy)
+    {
+        if (InvoiceId.HasValue)
+            throw new InvalidOperationException("Transaction already attached to an invoice");
+
+        InvoiceId = invoiceId;
+        Touch(updatedBy);
+    }
+
 }

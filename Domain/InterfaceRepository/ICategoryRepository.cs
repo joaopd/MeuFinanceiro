@@ -1,12 +1,9 @@
 ﻿using Domain.Entities;
+using Domain.InterfaceRepository.BaseRepository;
 
 namespace Domain.InterfaceRepository;
 
-public interface ICategoryRepository
+public interface ICategoryRepository : IRepository<Category>
 {
-    Task InsertAsync(Category category);
-
-    Task<IEnumerable<Category>> GetAllAsync();
-    Task<Category?> GetByIdAsync(Guid id);
     Task<Category?> GetByNameAsync(string name);
 }

@@ -43,7 +43,7 @@ public class CreateUserService : ICreateUserService
                 request.Email,
                 request.ParentUserId);
 
-            var userId = await _userRepository.CreateAsync(user);
+            var userId = await _userRepository.InsertAsync(user);
 
             _logger.LogInformation(
                 "CreateUser finished successfully - UserId: {UserId}",

@@ -43,42 +43,6 @@ public class TransactionRepository : ITransactionRepository
             new { UserId = userId, StartDate = startDate, EndDate = endDate });
     }
 
-    public async Task<decimal> GetBalanceByPeriodAsync(
-        Guid userId,
-        DateTime startDate,
-        DateTime endDate)
-    {
-        using var conn = _connectionFactory.CreateConnection();
-        return await conn.ExecuteScalarAsync<decimal>(
-            TransactionQueries.GetBalanceByPeriod,
-            new { UserId = userId, StartDate = startDate, EndDate = endDate });
-    }
-
-    public async Task<bool> InsertBulkAsync(IEnumerable<Transaction> entities)
-    {
-        using var conn = _connectionFactory.CreateConnection();
-        conn.Open();
-
-        using var transaction = conn.BeginTransaction();
-
-        try
-        {
-            await conn.ExecuteAsync(
-                TransactionQueries.Insert,
-                entities,
-                transaction);
-
-            transaction.Commit();
-            return true;
-        }
-        catch
-        {
-            transaction.Rollback();
-            throw;
-        }
-    }
-
-
     public async Task<Guid> InsertAsync(Transaction entity)
     {
         using var conn = _connectionFactory.CreateConnection();
@@ -87,15 +51,39 @@ public class TransactionRepository : ITransactionRepository
             entity);
     }
 
+    public async Task<bool> InsertBulkAsync(IEnumerable<Transaction> entities)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        conn.Open();
+
+        using var dbTransaction = conn.BeginTransaction();
+
+        try
+        {
+            await conn.ExecuteAsync(
+                TransactionQueries.Insert,
+                entities,
+                dbTransaction);
+
+            dbTransaction.Commit();
+            return true;
+        }
+        catch
+        {
+            dbTransaction.Rollback();
+            throw;
+        }
+    }
+
     public async Task UpdateAsync(Transaction entity)
     {
         using var conn = _connectionFactory.CreateConnection();
         await conn.ExecuteAsync(
             TransactionQueries.Update,
-            new 
-            { 
-                entity.Id, 
-                entity.Amount, 
+            new
+            {
+                entity.Id,
+                entity.Amount,
                 entity.TransactionDate,
                 entity.Observation,
                 entity.IsPaid,
@@ -111,7 +99,18 @@ public class TransactionRepository : ITransactionRepository
             TransactionQueries.SoftDelete,
             new { Id = id, UpdatedAt = DateTime.UtcNow });
     }
-    
+
+    public async Task<decimal> GetBalanceByPeriodAsync(
+        Guid userId,
+        DateTime startDate,
+        DateTime endDate)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.ExecuteScalarAsync<decimal>(
+            TransactionQueries.GetBalanceByPeriod,
+            new { UserId = userId, StartDate = startDate, EndDate = endDate });
+    }
+
     public async Task<IEnumerable<TransactionPagedRow>> GetByUserAndPeriodPagedAsync(
         Guid userId,
         DateTime startDate,
@@ -126,26 +125,12 @@ public class TransactionRepository : ITransactionRepository
     {
         using var conn = _connectionFactory.CreateConnection();
 
-        if (!includeDependents)
-        {
-            return await conn.QueryAsync<TransactionPagedRow>(
-                TransactionQueries.GetByUserAndPeriodPagedWithMeta,
-                new
-                {
-                    UserId = userId,
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    TransactionType = transactionType,
-                    CurrentPage = currentPage,
-                    RowsPerPage = rowsPerPage,
-                    OrderBy = orderBy,
-                    OrderAsc = orderAsc,
-                    CardId = cardId
-                });
-        }
-        
+        var query = includeDependents
+            ? TransactionQueries.GetFamilyTransactionsPaged
+            : TransactionQueries.GetByUserAndPeriodPagedWithMeta;
+
         return await conn.QueryAsync<TransactionPagedRow>(
-            TransactionQueries.GetFamilyTransactionsPaged,
+            query,
             new
             {
                 UserId = userId,
@@ -160,66 +145,75 @@ public class TransactionRepository : ITransactionRepository
             });
     }
 
-    public async Task<decimal> GetPaidExpensesAmountAsync(Guid userId, DateTime startDate, DateTime endDate)
+    public async Task<decimal> GetPaidExpensesAmountAsync(
+        Guid userId,
+        DateTime startDate,
+        DateTime endDate)
     {
         using var conn = _connectionFactory.CreateConnection();
         return await conn.ExecuteScalarAsync<decimal>(
             TransactionQueries.GetPaidExpensesAmount,
             new { UserId = userId, StartDate = startDate, EndDate = endDate });
     }
-    
-    public async Task<IEnumerable<CategoryExpenseRecord>> GetExpensesByCategoryAsync(Guid userId, DateTime start, DateTime end)
+
+    public async Task<IEnumerable<CategoryExpenseRecord>> GetExpensesByCategoryAsync(
+        Guid userId,
+        DateTime start,
+        DateTime end)
     {
         using var conn = _connectionFactory.CreateConnection();
         return await conn.QueryAsync<CategoryExpenseRecord>(
             TransactionQueries.GetExpensesByCategory,
             new { UserId = userId, StartDate = start, EndDate = end });
     }
-    
-    public async Task<IEnumerable<CashFlowRecord>> GetCashFlowAsync(Guid userId, DateTime start, DateTime end)
+
+    public async Task<IEnumerable<CashFlowRecord>> GetCashFlowAsync(
+        Guid userId,
+        DateTime start,
+        DateTime end)
     {
         using var conn = _connectionFactory.CreateConnection();
         return await conn.QueryAsync<CashFlowRecord>(
             TransactionQueries.GetCashFlow,
             new { UserId = userId, StartDate = start, EndDate = end });
     }
-    
-    public async Task<bool> ExistsByFixedExpenseAsync(Guid fixedExpenseId, int month, int year)
+
+    public async Task<bool> ExistsByFixedExpenseAsync(
+        Guid fixedExpenseId,
+        int month,
+        int year)
     {
         using var conn = _connectionFactory.CreateConnection();
         var count = await conn.ExecuteScalarAsync<int>(
             TransactionQueries.ExistsByFixedExpense,
-            new 
-            { 
-                FixedExpenseId = fixedExpenseId, 
-                Month = month, 
-                Year = year 
-            });
-        
+            new { FixedExpenseId = fixedExpenseId, Month = month, Year = year });
+
         return count > 0;
     }
-    
-    public async Task<decimal> GetCreditCardInvoiceSumAsync(Guid cardId, DateTime startDate, DateTime endDate)
+
+    public async Task<decimal> GetCreditCardInvoiceSumAsync(
+        Guid cardId,
+        DateTime startDate,
+        DateTime endDate)
     {
         using var conn = _connectionFactory.CreateConnection();
         return await conn.ExecuteScalarAsync<decimal>(
             TransactionQueries.GetCreditCardInvoiceSum,
             new { CardId = cardId, StartDate = startDate, EndDate = endDate });
     }
-    
-    public async Task<bool> ExistsDuplicateAsync(Guid userId, decimal amount, DateTime date, string description)
+
+    public async Task<bool> ExistsDuplicateAsync(
+        Guid userId,
+        decimal amount,
+        DateTime date,
+        string description)
     {
         using var conn = _connectionFactory.CreateConnection();
-        const string query = @"
-        SELECT COUNT(1) 
-        FROM ""Transaction"" 
-        WHERE ""UserId"" = @UserId 
-          AND ""Amount"" = @Amount 
-          AND ""TransactionDate""::date = @Date::date 
-          AND ""Observation"" = @Description
-          AND ""IsDeleted"" = false;";
+        
+        var count = await conn.ExecuteScalarAsync<int>(
+            TransactionQueries.ExistDuplicate,
+            new { UserId = userId, Amount = amount, Date = date, Description = description });
 
-        var count = await conn.ExecuteScalarAsync<int>(query, new { userId, amount, date, description });
         return count > 0;
     }
 }

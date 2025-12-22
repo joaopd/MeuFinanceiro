@@ -8,6 +8,8 @@ public class Invoice : BaseEntity
     public decimal TotalAmount { get; private set; }
     public bool IsPaid { get; private set; }
 
+    protected Invoice() { }
+
     public Invoice(Guid cardId, DateTime referenceDate, DateTime dueDate)
     {
         Id = Guid.NewGuid();
@@ -18,6 +20,22 @@ public class Invoice : BaseEntity
         IsPaid = false;
     }
 
-    public void MarkAsPaid() => IsPaid = true;
-    public void UpdateTotal(decimal amount) => TotalAmount += amount;
+    public void MarkAsPaid(Guid updatedBy)
+    {
+        if (IsPaid) return;
+
+        IsPaid = true;
+        Touch(updatedBy);
+    }
+
+    public void AddTransactionAmount(decimal amount)
+    {
+        if (IsPaid)
+            throw new InvalidOperationException("Cannot add amount to a paid invoice");
+
+        if (amount <= 0)
+            throw new ArgumentException("Amount must be greater than zero");
+
+        TotalAmount += amount;
+    }
 }

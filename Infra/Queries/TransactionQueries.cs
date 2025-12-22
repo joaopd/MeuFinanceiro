@@ -4,7 +4,8 @@ public static class TransactionQueries
 {
     public const string GetById = """
         SELECT * FROM "Transaction" 
-        WHERE "Id" = @Id AND "IsDeleted" = false;
+        WHERE "Id" = @Id 
+          AND "IsDeleted" = false;
     """;
 
     public const string GetAll = """
@@ -18,22 +19,49 @@ public static class TransactionQueries
           AND "TransactionDate"::date BETWEEN @StartDate::date AND @EndDate::date
           AND "IsDeleted" = false;
     """;
-    
+
     public const string Insert = """
         INSERT INTO "Transaction" (
-            "Id", "UserId", "CategoryId", "Amount", "TransactionDate",
-            "TransactionType", "PaymentMethod", "CardId",
-            "InstallmentNumber", "TotalInstallments", "IsFixed", "IsPaid",
-            "FixedExpenseId", "Observation",
-            "CreatedAt", "UpdatedAt", "IsDeleted"
+            "Id",
+            "UserId",
+            "CategoryId",
+            "Amount",
+            "TransactionDate",
+            "TransactionType",
+            "PaymentMethod",
+            "CardId",
+            "InvoiceId",
+            "InstallmentNumber",
+            "TotalInstallments",
+            "IsFixed",
+            "IsPaid",
+            "FixedExpenseId",
+            "Observation",
+            "CreatedAt",
+            "UpdatedAt",
+            "IsDeleted"
         )
         VALUES (
-            @Id, @UserId, @CategoryId, @Amount, @TransactionDate,
-            @TransactionType, @PaymentMethod, @CardId,
-            @InstallmentNumber, @TotalInstallments, @IsFixed, @IsPaid,
-            @FixedExpenseId, @Observation,
-            @CreatedAt, @UpdatedAt, false
+            @Id,
+            @UserId,
+            @CategoryId,
+            @Amount,
+            @TransactionDate,
+            @TransactionType,
+            @PaymentMethod,
+            @CardId,
+            @InvoiceId,
+            @InstallmentNumber,
+            @TotalInstallments,
+            @IsFixed,
+            @IsPaid,
+            @FixedExpenseId,
+            @Observation,
+            @CreatedAt,
+            @UpdatedAt,
+            false
         )
+        RETURNING "Id";
     """;
 
     public const string Update = """
@@ -50,7 +78,9 @@ public static class TransactionQueries
 
     public const string SoftDelete = """
         UPDATE "Transaction"
-        SET "IsDeleted" = true, "UpdatedAt" = @UpdatedAt
+        SET 
+            "IsDeleted" = true,
+            "UpdatedAt" = @UpdatedAt
         WHERE "Id" = @Id;
     """;
 
@@ -73,9 +103,9 @@ public static class TransactionQueries
         SELECT COALESCE(SUM("Amount"), 0)
         FROM "Transaction"
         WHERE "CardId" = @CardId
+          AND "InvoiceId" IS NOT NULL
           AND "TransactionType" = 1
-          AND "PaymentMethod" = 0  
-          AND "TransactionDate"::date BETWEEN @StartDate::date AND @EndDate::date
+          AND "PaymentMethod" = 0
           AND "IsDeleted" = false;
     """;
 
@@ -99,12 +129,14 @@ public static class TransactionQueries
                 "TransactionDate" DESC
             LIMIT @RowsPerPage OFFSET (@CurrentPage - 1) * @RowsPerPage
         )
-        SELECT *, total_rows,
+        SELECT *, 
+               total_rows,
                CEILING(total_rows::decimal / @RowsPerPage) AS total_pages,
-               @CurrentPage AS current_page, @RowsPerPage AS rows_per_page
+               @CurrentPage AS current_page,
+               @RowsPerPage AS rows_per_page
         FROM paged;
     """;
-    
+
     public const string GetFamilyTransactionsPaged = """
         WITH base AS (
             SELECT t.*, COUNT(*) OVER() AS total_rows
@@ -126,9 +158,11 @@ public static class TransactionQueries
                 "TransactionDate" DESC
             LIMIT @RowsPerPage OFFSET (@CurrentPage - 1) * @RowsPerPage
         )
-        SELECT *, total_rows,
+        SELECT *, 
+               total_rows,
                CEILING(total_rows::decimal / @RowsPerPage) AS total_pages,
-               @CurrentPage AS current_page, @RowsPerPage AS rows_per_page
+               @CurrentPage AS current_page,
+               @RowsPerPage AS rows_per_page
         FROM paged;
     """;
 
@@ -141,17 +175,17 @@ public static class TransactionQueries
           AND "IsPaid" = true
           AND "IsDeleted" = false;
     """;
-    
+
     public const string GetExpensesByCategory = """
         SELECT 
-            c."Name" as Category, 
-            SUM(t."Amount") as Total
-        FROM "Transaction" t  
+            c."Name" AS Category,
+            SUM(t."Amount") AS Total
+        FROM "Transaction" t
         JOIN "Category" c ON t."CategoryId" = c."Id"
         LEFT JOIN "User" u ON t."UserId" = u."Id"
         WHERE (t."UserId" = @UserId OR u."ParentUserId" = @UserId)
           AND t."TransactionDate"::date BETWEEN @StartDate::date AND @EndDate::date
-          AND t."TransactionType" = 1 
+          AND t."TransactionType" = 1
           AND t."IsDeleted" = false
         GROUP BY c."Name"
         ORDER BY Total DESC;
@@ -159,8 +193,8 @@ public static class TransactionQueries
 
     public const string GetCashFlow = """
         SELECT 
-            t."TransactionType", 
-            SUM(t."Amount") as Total
+            t."TransactionType",
+            SUM(t."Amount") AS Total
         FROM "Transaction" t
         LEFT JOIN "User" u ON t."UserId" = u."Id"
         WHERE (t."UserId" = @UserId OR u."ParentUserId" = @UserId)
@@ -170,11 +204,21 @@ public static class TransactionQueries
     """;
 
     public const string ExistsByFixedExpense = """
-        SELECT COUNT(1) 
-        FROM "Transaction" 
+        SELECT COUNT(1)
+        FROM "Transaction"
         WHERE "FixedExpenseId" = @FixedExpenseId
           AND EXTRACT(MONTH FROM "TransactionDate") = @Month
           AND EXTRACT(YEAR FROM "TransactionDate") = @Year
+          AND "IsDeleted" = false;
+    """;
+    
+    public const string ExistDuplicate = """
+       SELECT COUNT(1)
+        FROM "Transaction"
+        WHERE "UserId" = @UserId
+          AND "Amount" = @Amount
+          AND "TransactionDate"::date = @Date::date
+          AND "Observation" = @Description
           AND "IsDeleted" = false;
     """;
 }

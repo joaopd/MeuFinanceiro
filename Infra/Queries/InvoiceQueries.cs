@@ -29,4 +29,23 @@ public static class InvoiceQueries
         UPDATE Transactions 
         SET IsPaid = 1, UpdatedAt = GETDATE(), UpdatedBy = @UserId 
         WHERE InvoiceId = @InvoiceId";
+    
+
+        public const string GetAll = @"
+        SELECT * FROM Invoices
+        ORDER BY DueDate DESC";
+
+        public const string Update = @"
+        UPDATE Invoices SET
+            ReferenceDate = @ReferenceDate,
+            DueDate = @DueDate,
+            TotalAmount = @TotalAmount,
+            IsPaid = @IsPaid,
+            UpdatedAt = @UpdatedAt,
+            UpdatedBy = @UpdatedBy
+        WHERE Id = @Id";
+
+        public const string Delete = @"
+        DELETE FROM Invoices WHERE Id = @Id";
+        
 }

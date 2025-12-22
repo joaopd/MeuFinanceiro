@@ -11,15 +11,13 @@ public class UserRepository : IUserRepository
     private readonly IDbConnectionFactory _connectionFactory;
 
     public UserRepository(IDbConnectionFactory connectionFactory)
-    {
-        _connectionFactory = connectionFactory;
-    }
+        => _connectionFactory = connectionFactory;
 
-    public async Task<Guid> CreateAsync(User user)
+    public async Task<Guid> InsertAsync(User user)
     {
-        using var connection = _connectionFactory.CreateConnection();
+        using var conn = _connectionFactory.CreateConnection();
 
-        var id = await connection.QuerySingleAsync<Guid>(
+        return await conn.QuerySingleAsync<Guid>(
             UserQueries.Insert,
             new
             {
@@ -31,41 +29,67 @@ public class UserRepository : IUserRepository
                 user.UpdatedAt,
                 user.IsDeleted
             });
-
-        return id;
     }
 
     public async Task<User?> GetByIdAsync(Guid id)
     {
-        using var connection = _connectionFactory.CreateConnection();
-
-        return await connection.QuerySingleOrDefaultAsync<User>(
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<User>(
             UserQueries.GetById,
             new { Id = id });
     }
-    
+
+    public async Task<IEnumerable<User>> GetAllAsync()
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QueryAsync<User>(
+            UserQueries.GetAll);
+    }
+
     public async Task<User?> GetByEmailAsync(string email)
     {
-        using var connection = _connectionFactory.CreateConnection();
-
-        return await connection.QuerySingleOrDefaultAsync<User>(
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<User>(
             UserQueries.GetByEmail,
             new { Email = email });
     }
 
     public async Task<IEnumerable<User>> GetDependentsAsync(Guid parentUserId)
     {
-        using var connection = _connectionFactory.CreateConnection();
-
-        return await connection.QueryAsync<User>(
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.QueryAsync<User>(
             UserQueries.GetDependents,
             new { ParentUserId = parentUserId });
     }
+
     public async Task<IEnumerable<User>> GetByParentIdAsync(Guid parentUserId)
     {
         using var conn = _connectionFactory.CreateConnection();
         return await conn.QueryAsync<User>(
             UserQueries.GetByParentId,
             new { ParentUserId = parentUserId });
+    }
+
+    public async Task UpdateAsync(User user)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        await conn.ExecuteAsync(
+            UserQueries.Update,
+            new
+            {
+                user.Id,
+                user.Name,
+                user.Email,
+                user.UpdatedAt,
+                user.UpdatedBy
+            });
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        await conn.ExecuteAsync(
+            UserQueries.SoftDelete,
+            new { Id = id, UpdatedAt = DateTime.UtcNow });
     }
 }
