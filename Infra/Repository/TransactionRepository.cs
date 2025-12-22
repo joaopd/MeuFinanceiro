@@ -180,4 +180,12 @@ public class TransactionRepository : ITransactionRepository
         
         return count > 0;
     }
+    
+    public async Task<decimal> GetCreditCardInvoiceSumAsync(Guid cardId, DateTime startDate, DateTime endDate)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        return await conn.ExecuteScalarAsync<decimal>(
+            TransactionQueries.GetCreditCardInvoiceSum,
+            new { CardId = cardId, StartDate = startDate, EndDate = endDate });
+    }
 }

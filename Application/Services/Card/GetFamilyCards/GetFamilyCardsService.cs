@@ -8,34 +8,64 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Card.GetFamilyCards;
 
-public class GetFamilyCardsService : IGetFamilyCardsService
+public class GetFamilyCardsService(
+    ICardRepository cardRepository,
+    ITransactionRepository transactionRepository,
+    ILogger<GetFamilyCardsService> logger)
+    : IGetFamilyCardsService
 {
-    private readonly ICardRepository _cardRepository;
-    private readonly ILogger<GetFamilyCardsService> _logger;
-
-    public GetFamilyCardsService(
-        ICardRepository cardRepository,
-        ILogger<GetFamilyCardsService> logger)
-    {
-        _cardRepository = cardRepository;
-        _logger = logger;
-    }
-
     public async Task<Result<IEnumerable<CardResponseDto>>> ExecuteAsync(Guid userId)
     {
         try
         {
-            _logger.LogInformation("GetFamilyCards started - UserId: {UserId}", userId);
+            logger.LogInformation("GetFamilyCards started - UserId: {UserId}", userId);
 
-            var cards = await _cardRepository.GetFamilyCardsAsync(userId);
+            var cards = await cardRepository.GetFamilyCardsAsync(userId);
 
-            _logger.LogInformation("GetFamilyCards finished - Count: {Count}", cards.Count());
+            logger.LogInformation("GetFamilyCards finished - Count: {Count}", cards.Count());
+            
+            var today = DateTime.UtcNow.Date;
+            
+            var cardDtos = new List<CardResponseDto>();
+            
+            foreach (var card in cards)
+            {
+                
+                DateTime invoiceStart, invoiceEnd;
+                
+                var closingThisMonth = new DateTime(today.Year, today.Month, 
+                    Math.Min(card.ClosingDay, DateTime.DaysInMonth(today.Year, today.Month)));
 
-            return Result.Ok(cards.Select(c => c.ToDto()));
+                if (today >= closingThisMonth)
+                {
+                    invoiceStart = closingThisMonth; 
+                    invoiceEnd = closingThisMonth.AddMonths(1);
+                }
+                else
+                {
+                    invoiceStart = closingThisMonth.AddMonths(-1);
+                    invoiceEnd = closingThisMonth;
+                }
+                
+                var debt = await transactionRepository.GetCreditCardInvoiceSumAsync(card.Id, invoiceStart, invoiceEnd);
+
+                cardDtos.Add(new CardResponseDto(
+                    card.Id,
+                    card.Name,
+                    card.CreditLimit,
+                    debt,
+                    card.UserId,
+                    card.ClosingDay,
+                    card.DueDay,
+                    card.Color
+                ));
+            }
+            
+            return Result.Ok((IEnumerable<CardResponseDto>)cardDtos);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching family cards for UserId: {UserId}", userId);
+            logger.LogError(ex, "Error fetching family cards for UserId: {UserId}", userId);
             return Result.Fail(FinanceErrorMessage.DatabaseError);
         }
     }

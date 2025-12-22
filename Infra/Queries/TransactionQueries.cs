@@ -24,14 +24,14 @@ public static class TransactionQueries
                                          "Id", "UserId", "CategoryId", "Amount", "TransactionDate",
                                          "TransactionType", "PaymentMethod", "CardId",
                                          "InstallmentNumber", "TotalInstallments", "IsFixed", "IsPaid",
-                                         "FixedExpenseId", "Observation", -- <--- Add Coluna
+                                         "FixedExpenseId", "Observation",
                                          "CreatedAt", "UpdatedAt", "IsDeleted"
                                      )
                                      VALUES (
                                          @Id, @UserId, @CategoryId, @Amount, @TransactionDate,
                                          @TransactionType, @PaymentMethod, @CardId,
                                          @InstallmentNumber, @TotalInstallments, @IsFixed, @IsPaid,
-                                         @FixedExpenseId, @Observation, -- <--- Add Parâmetro
+                                         @FixedExpenseId, @Observation,
                                          @CreatedAt, @UpdatedAt, false
                                      )
                                  """;
@@ -41,7 +41,7 @@ public static class TransactionQueries
                                      SET
                                          "Amount" = @Amount,
                                          "TransactionDate" = @TransactionDate,
-                                         "Observation" = @Observation, -- <--- Add Update
+                                         "Observation" = @Observation,
                                          "UpdatedAt" = @UpdatedAt,
                                          "UpdatedBy" = @UpdatedBy
                                      WHERE "Id" = @Id;
@@ -54,18 +54,29 @@ public static class TransactionQueries
     """;
 
     public const string GetBalanceByPeriod = """
-        SELECT COALESCE(SUM(
-            CASE 
-                WHEN "TransactionType" = 0 THEN "Amount"
-                WHEN "TransactionType" = 1 THEN - "Amount"
-            END
-        ), 0)
-        FROM "Transaction"
-        WHERE "UserId" = @UserId
-          AND "TransactionDate" BETWEEN @StartDate AND @EndDate
-          AND "IsDeleted" = false;
-    """;
-    
+                                                 SELECT COALESCE(SUM(
+                                                     CASE 
+                                                         WHEN "TransactionType" = 0 THEN "Amount" 
+                                                         WHEN "TransactionType" = 1 AND "PaymentMethod" <> 0 THEN - "Amount" 
+                                                         ELSE 0
+                                                     END
+                                                 ), 0)
+                                                 FROM "Transaction"
+                                                 WHERE "UserId" = @UserId
+                                                   AND "TransactionDate" BETWEEN @StartDate AND @EndDate
+                                                   AND "IsPaid" = true
+                                                   AND "IsDeleted" = false;
+                                             """;
+
+    public const string GetCreditCardInvoiceSum = """
+                                                      SELECT COALESCE(SUM("Amount"), 0)
+                                                      FROM "Transaction"
+                                                      WHERE "CardId" = @CardId
+                                                        AND "TransactionType" = 1
+                                                        AND "PaymentMethod" = 0  
+                                                        AND "TransactionDate" BETWEEN @StartDate AND @EndDate
+                                                        AND "IsDeleted" = false;
+                                                  """;
     public const string GetByUserAndPeriodPagedWithMeta = """
                                                               WITH base AS (
                                                                   SELECT t.*, COUNT(*) OVER() AS total_rows
@@ -73,7 +84,7 @@ public static class TransactionQueries
                                                                   WHERE t."UserId" = @UserId
                                                                     AND t."TransactionDate" BETWEEN @StartDate AND @EndDate
                                                                     AND (@TransactionType IS NULL OR t."TransactionType" = @TransactionType)
-                                                                    AND (@CardId IS NULL OR t."CardId" = @CardId) -- <--- NOVO FILTRO
+                                                                    AND (@CardId IS NULL OR t."CardId" = @CardId)
                                                                     AND t."IsDeleted" = false
                                                               ),
                                                               paged AS (
@@ -97,7 +108,7 @@ public static class TransactionQueries
                                                     FROM "Transaction"
                                                     WHERE "UserId" = @UserId
                                                       AND "TransactionDate" BETWEEN @StartDate AND @EndDate
-                                                      AND "TransactionType" = 1 -- EXPENSE
+                                                      AND "TransactionType" = 1
                                                       AND "IsPaid" = true
                                                       AND "IsDeleted" = false;
                                                 """;
@@ -141,7 +152,7 @@ public static class TransactionQueries
                                                              SELECT t.*, COUNT(*) OVER() AS total_rows
                                                              FROM "Transaction" t
                                                              LEFT JOIN "User" u ON t."UserId" = u."Id"
-                                                             WHERE (t."UserId" = @UserId OR u."ParentUserId" = @UserId) -- A Mágica acontece aqui
+                                                             WHERE (t."UserId" = @UserId OR u."ParentUserId" = @UserId)
                                                                AND t."TransactionDate" BETWEEN @StartDate AND @EndDate
                                                                AND (@TransactionType IS NULL OR t."TransactionType" = @TransactionType)
                                                                AND t."IsDeleted" = false
@@ -149,7 +160,7 @@ public static class TransactionQueries
                                                          paged AS (
                                                              SELECT * FROM base
                                                              ORDER BY
-                                                                 "TransactionDate" DESC -- Simplifiquei a ordenação para o exemplo
+                                                                 "TransactionDate" DESC
                                                              LIMIT @RowsPerPage OFFSET (@CurrentPage - 1) * @RowsPerPage
                                                          )
                                                          SELECT *, total_rows,
