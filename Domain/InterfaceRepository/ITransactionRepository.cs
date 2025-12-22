@@ -50,4 +50,5 @@ public interface ITransactionRepository : IRepository<Transaction>
     Task<IEnumerable<CashFlowRecord>> GetCashFlowAsync(Guid userId, DateTime start, DateTime end);
     Task<bool> ExistsByFixedExpenseAsync(Guid fixedExpenseId, int month, int year);
     Task<decimal> GetCreditCardInvoiceSumAsync(Guid cardId, DateTime startDate, DateTime endDate);
+    Task<bool> ExistsDuplicateAsync(Guid userId, decimal amount, DateTime date, string description);
 }

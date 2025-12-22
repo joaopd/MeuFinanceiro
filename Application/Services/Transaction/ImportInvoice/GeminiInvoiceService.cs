@@ -1,12 +1,13 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using Domain.Abstractions.ErrorHandling;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.InterfaceRepository;
-using Domain.InterfaceRepository.BaseRepository;
 using FluentResults;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Transaction.ImportInvoice;
 
@@ -14,23 +15,22 @@ public class GeminiInvoiceService : IImportInvoiceService
 {
     private readonly ITransactionRepository _transactionRepository;
     private readonly ICategoryRepository _categoryRepository;
-    private readonly ICardRepository _cardRepository;
     private readonly HttpClient _httpClient;
+    private readonly ILogger<GeminiInvoiceService> _logger;
 
     public GeminiInvoiceService(
         ITransactionRepository transactionRepository,
         ICategoryRepository categoryRepository,
-        ICardRepository cardRepository,
-        IConfiguration config)
+        IConfiguration config,
+        ILogger<GeminiInvoiceService> logger)
     {
         _transactionRepository = transactionRepository;
         _categoryRepository = categoryRepository;
-        _cardRepository = cardRepository;
+        _logger = logger;
         
         _httpClient = new HttpClient();
         var apiKey = config["Gemini:ApiKey"] ?? throw new ArgumentException("Gemini ApiKey missing no appsettings.json");
         
-        // Atualização conforme a nova doc: chave de API via Header
         _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", apiKey);
     }
 
@@ -38,57 +38,89 @@ public class GeminiInvoiceService : IImportInvoiceService
     {
         try
         {
-            var apiKey = _httpClient.DefaultRequestHeaders.GetValues("x-goog-api-key").FirstOrDefault();
+            _logger.LogInformation("ImportInvoice started - UserId: {UserId}, CardId: {CardId}, FileName: {FileName}", 
+                userId, cardId, file.FileName);
+
+            // 1. Obter categorias para contexto da IA
             var categories = await _categoryRepository.GetAllAsync();
             var categoryList = string.Join(", ", categories.Select(c => $"{c.Name} (ID:{c.Id})"));
-            
-            var cardList = await _cardRepository.GetByUserIdAsync(userId);
-            var cardListStr = string.Join(", ", cardList.Select(c => $"{c.Name} (ID:{c.Id})"));
 
             using var ms = new MemoryStream();
             await file.CopyToAsync(ms);
             var base64Pdf = Convert.ToBase64String(ms.ToArray());
 
-            var prompt = $@"Aja como um especialista financeiro. Analise esta fatura de cartão de crédito.
-                Categorias existentes no sistema: [{categoryList}].
-                Cartões existentes no sistema: [{cardListStr}].
+            // 3. Prompt Otimizado (Focado apenas em categorias para reduzir custo de tokens)
+            var prompt = $@"
+                Aja como um especialista financeiro analisando faturas de cartão de crédito em PDF.
+                Categorias existentes no sistema:
+                [{{categoryList}}]
 
-                Instruções:
-                1. Extraia cada transação com Data, Descrição e Valor.
-                2. Se a descrição for similar a uma categoria existente, use o ID em 'CategoryId'.
-                3. Se não houver similaridade, identifique o tipo de gasto (ex: Juros, Assinaturas, Alimentação) e retorne em 'NewCategoryName'.
-                4. Ignore pagamentos de faturas ou créditos.
-                5. Verifique pela fatura qual cartão foi usado e retorne o 'CardId' correspondente.
-                
-                Retorne APENAS um array JSON puro (sem markdown):
-                [{{ ""Description"": ""string"", ""Amount"": number, ""TransactionDate"": ""YYYY-MM-DD"", ""CategoryId"": ""uuid?"",""CardId"": ""uuid?"", ""NewCategoryName"": ""string?"" }}]";
+                Objetivo:
+                Extrair corretamente as transações financeiras, ajustando especialmente a data de transações parceladas.
 
-          
-            // URL agora sem a API Key exposta na query string
+                    Instruções:
+
+                1. Extraia cada transação com:
+                - TransactionDate
+                    - Description
+                    - Amount
+
+                2. Ignore pagamentos de fatura, estornos, créditos ou ajustes.
+
+                3. Classificação de categorias:
+                - Se a descrição for similar a uma categoria existente, use o CategoryId correspondente.
+                - Caso contrário, identifique o tipo de gasto e retorne em NewCategoryName.
+
+                4. Transações parceladas:
+                - Identifique parcelamentos no formato: 'Parcela X de Y'.
+
+                5. Regra de data (MUITO IMPORTANTE):
+
+                a) Se a transação NÃO for parcelada:
+                - Use a data informada no PDF como TransactionDate.
+
+                    b) Se a transação FOR parcelada:
+                - A data exibida no PDF pode representar apenas a data da compra original.
+                - O TransactionDate DEVE representar a data da parcela correspondente ao mês da fatura atual.
+
+                    Regra de cálculo:
+                TransactionDate =
+                    Data da compra original
+                    + (Número da parcela atual) meses
+
+                6. Sempre retorne a data ajustada para que a transação pertença corretamente ao mês vigente da fatura.
+
+                    Formato de saída:
+                Retorne apenas JSON válido, sem explicações adicionais.
+
+                    Retorne APENAS um array JSON puro (sem markdown):
+                [{{ ""Description"": ""string"", ""Amount"": number, ""TransactionDate"": ""YYYY-MM-DD"", ""CategoryId"": ""uuid?"", ""NewCategoryName"": ""string?"" }}]";
+            
             var requestBody = new
             {
                 contents = new[] {
-                    new { 
+                    new {
                         role = "user",
-                        parts = new object[] { 
+                        parts = new object[] {
                             new { text = prompt },
                             new { inline_data = new { mime_type = "application/pdf", data = base64Pdf } }
-                        } 
+                        }
                     }
                 },
                 generationConfig = new {
                 }
             };
-
+            
             // 4. Chamada utilizando o modelo gemini-3-flash-preview
             var response = await _httpClient.PostAsJsonAsync(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent", 
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
                 requestBody);
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
-                return Result.Fail($"Erro na IA: {response.StatusCode} - {error}");
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Gemini API Error: {StatusCode} - {Error}", response.StatusCode, errorBody);
+                return Result.Fail(FinanceErrorMessage.InternalServerError);
             }
 
             var result = await response.Content.ReadAsStringAsync();
@@ -98,11 +130,17 @@ public class GeminiInvoiceService : IImportInvoiceService
 
             foreach (var item in aiItems)
             {
-                Guid finalCardId = cardId; 
-                if (!string.IsNullOrEmpty(item.CardId) && Guid.TryParse(item.CardId, out var idCard))
-                    finalCardId = idCard;
+                bool isDuplicate = await _transactionRepository.ExistsDuplicateAsync(
+                    userId, item.Amount, item.TransactionDate, item.Description);
+
+                if (isDuplicate)
+                {
+                    _logger.LogInformation("Duplicate transaction ignored: {Desc}", item.Description);
+                    continue;
+                }
                 
                 Guid finalCategoryId;
+
                 if (!string.IsNullOrEmpty(item.CategoryId) && Guid.TryParse(item.CategoryId, out var idCat))
                 {
                     finalCategoryId = idCat;
@@ -118,48 +156,66 @@ public class GeminiInvoiceService : IImportInvoiceService
                     }
                     else
                     {
+                        _logger.LogInformation("Creating new category suggested by AI: {Name}", suggestedName);
                         var newCat = new Domain.Entities.Category(suggestedName);
                         await _categoryRepository.InsertAsync(newCat);
                         finalCategoryId = newCat.Id;
                     }
                 }
 
-                var transaction = new Domain.Entities.Transaction(
-                    Guid.NewGuid(),
-                    userId,
-                    finalCategoryId,
-                    item.Amount,
+                // Criação da transação usando o cardId fornecido pelo front-end
+                finalTransactions.Add(new Domain.Entities.Transaction(
+                    Guid.NewGuid(), 
+                    userId, 
+                    finalCategoryId, 
+                    item.Amount, 
                     item.TransactionDate,
-                    TransactionType.EXPENSE,
-                    finalCardId,                 
-                    PaymentMethod.CREDIT,   
-                    1, 1, false, false, null,
-                    item.Description        
-                );
-
-                finalTransactions.Add(transaction);
+                    TransactionType.EXPENSE, 
+                    cardId,
+                    PaymentMethod.CREDIT, 
+                    1, 1, false, false, null, 
+                    item.Description
+                ));
             }
 
+            if (finalTransactions.Count == 0)
+            {
+                _logger.LogInformation("No new transactions to import.");
+                return Result.Ok(0);
+            }
+
+            // Inserção em massa para performance
             var success = await _transactionRepository.InsertBulkAsync(finalTransactions);
-            return success ? Result.Ok(finalTransactions.Count) : Result.Fail("Erro ao salvar no banco.");
+            
+            _logger.LogInformation("ImportInvoice finished - Imported: {Count}", finalTransactions.Count);
+            return success ? Result.Ok(finalTransactions.Count) : Result.Fail(FinanceErrorMessage.DatabaseError);
         }
         catch (Exception ex)
         {
-            return Result.Fail($"Falha na importação: {ex.Message}");
+            _logger.LogError(ex, "Critical error during invoice import for UserId: {UserId}", userId);
+            return Result.Fail(FinanceErrorMessage.UnexpectedError);
         }
     }
 
     private List<AIInvoiceItemDto> ParseGeminiResponse(string response)
     {
-        using var doc = JsonDocument.Parse(response);
-        var text = doc.RootElement.GetProperty("candidates")[0]
-                                  .GetProperty("content")
-                                  .GetProperty("parts")[0]
-                                  .GetProperty("text").GetString();
+        try 
+        {
+            using var doc = JsonDocument.Parse(response);
+            var text = doc.RootElement.GetProperty("candidates")[0]
+                                      .GetProperty("content")
+                                      .GetProperty("parts")[0]
+                                      .GetProperty("text").GetString();
 
-        var cleanJson = text?.Replace("```json", "").Replace("```", "").Trim();
-        return JsonSerializer.Deserialize<List<AIInvoiceItemDto>>(cleanJson!, new JsonSerializerOptions {
-            PropertyNameCaseInsensitive = true
-        }) ?? new();
+            var cleanJson = text?.Replace("```json", "").Replace("```", "").Trim();
+            return JsonSerializer.Deserialize<List<AIInvoiceItemDto>>(cleanJson!, new JsonSerializerOptions {
+                PropertyNameCaseInsensitive = true
+            }) ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error parsing Gemini JSON response");
+            return new List<AIInvoiceItemDto>();
+        }
     }
 }

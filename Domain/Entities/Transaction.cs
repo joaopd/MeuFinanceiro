@@ -9,7 +9,7 @@ public class Transaction : BaseEntity
     public decimal Amount { get; private set; }
     public DateTime TransactionDate { get; private set; }
     public TransactionType TransactionType { get; private set; }
-
+    public Guid? InvoiceId { get; private set; }
     public Guid? CardId { get; private set; }
     public PaymentMethod? PaymentMethod { get; private set; }
 

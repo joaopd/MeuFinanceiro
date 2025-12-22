@@ -206,4 +206,20 @@ public class TransactionRepository : ITransactionRepository
             TransactionQueries.GetCreditCardInvoiceSum,
             new { CardId = cardId, StartDate = startDate, EndDate = endDate });
     }
+    
+    public async Task<bool> ExistsDuplicateAsync(Guid userId, decimal amount, DateTime date, string description)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        const string query = @"
+        SELECT COUNT(1) 
+        FROM ""Transaction"" 
+        WHERE ""UserId"" = @UserId 
+          AND ""Amount"" = @Amount 
+          AND ""TransactionDate""::date = @Date::date 
+          AND ""Observation"" = @Description
+          AND ""IsDeleted"" = false;";
+
+        var count = await conn.ExecuteScalarAsync<int>(query, new { userId, amount, date, description });
+        return count > 0;
+    }
 }
