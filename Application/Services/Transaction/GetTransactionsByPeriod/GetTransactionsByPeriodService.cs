@@ -63,7 +63,7 @@ public sealed class  GetTransactionsByPeriodService(
                     .Select(r =>
                     {
                         var transaction = r.ToTransaction();
-                        return transaction.ToDto();
+                        return transaction.ToDto(r.CategoryName);
                     })
                     .ToList()
             };

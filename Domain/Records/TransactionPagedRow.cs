@@ -7,6 +7,7 @@ public sealed class TransactionPagedRow
     public Guid Id { get; init; }
     public Guid UserId { get; init; }
     public Guid CategoryId { get; init; }
+    public string CategoryName { get; init; } = null!;
     public decimal Amount { get; init; }
     public DateTime TransactionDate { get; init; }
     public TransactionType TransactionType { get; init; }

@@ -110,61 +110,77 @@ public static class TransactionQueries
     """;
 
     public const string GetByUserAndPeriodPagedWithMeta = """
-        WITH base AS (
-            SELECT t.*, COUNT(*) OVER() AS total_rows
-            FROM "Transaction" t
-            WHERE t."UserId" = @UserId
-              AND t."TransactionDate"::date BETWEEN @StartDate::date AND @EndDate::date
-              AND (@TransactionType IS NULL OR t."TransactionType" = @TransactionType)
-              AND (@CardId IS NULL OR t."CardId" = @CardId)
-              AND t."IsDeleted" = false
-        ),
-        paged AS (
-            SELECT * FROM base
-            ORDER BY
-                CASE WHEN @OrderBy = 'TransactionDate' AND @OrderAsc THEN "TransactionDate" END ASC,
-                CASE WHEN @OrderBy = 'TransactionDate' AND NOT @OrderAsc THEN "TransactionDate" END DESC,
-                CASE WHEN @OrderBy = 'Amount' AND @OrderAsc THEN "Amount" END ASC,
-                CASE WHEN @OrderBy = 'Amount' AND NOT @OrderAsc THEN "Amount" END DESC,
-                "TransactionDate" DESC
-            LIMIT @RowsPerPage OFFSET (@CurrentPage - 1) * @RowsPerPage
-        )
-        SELECT *, 
-               total_rows,
-               CEILING(total_rows::decimal / @RowsPerPage) AS total_pages,
-               @CurrentPage AS current_page,
-               @RowsPerPage AS rows_per_page
-        FROM paged;
-    """;
+                                                          WITH base AS (
+                                                              SELECT 
+                                                                  t.*,
+                                                                  c."Name" AS "CategoryName",
+                                                                  COUNT(*) OVER() AS total_rows
+                                                              FROM "Transaction" t
+                                                              LEFT JOIN "Category" c 
+                                                                  ON c."Id" = t."CategoryId"
+                                                              WHERE t."UserId" = @UserId
+                                                                AND t."TransactionDate"::date BETWEEN @StartDate::date AND @EndDate::date
+                                                                AND (@TransactionType IS NULL OR t."TransactionType" = @TransactionType)
+                                                                AND (@CardId IS NULL OR t."CardId" = @CardId)
+                                                                AND t."IsDeleted" = false
+                                                          ),
+                                                          paged AS (
+                                                              SELECT *
+                                                              FROM base
+                                                              ORDER BY
+                                                                  CASE WHEN @OrderBy = 'TransactionDate' AND @OrderAsc THEN "TransactionDate" END ASC,
+                                                                  CASE WHEN @OrderBy = 'TransactionDate' AND NOT @OrderAsc THEN "TransactionDate" END DESC,
+                                                                  CASE WHEN @OrderBy = 'Amount' AND @OrderAsc THEN "Amount" END ASC,
+                                                                  CASE WHEN @OrderBy = 'Amount' AND NOT @OrderAsc THEN "Amount" END DESC,
+                                                                  "TransactionDate" DESC
+                                                              LIMIT @RowsPerPage OFFSET (@CurrentPage - 1) * @RowsPerPage
+                                                          )
+                                                          SELECT 
+                                                              *,
+                                                              total_rows,
+                                                              CEILING(total_rows::decimal / @RowsPerPage) AS total_pages,
+                                                              @CurrentPage AS current_page,
+                                                              @RowsPerPage AS rows_per_page
+                                                          FROM paged;
+                                                          """;
+
 
     public const string GetFamilyTransactionsPaged = """
-        WITH base AS (
-            SELECT t.*, COUNT(*) OVER() AS total_rows
-            FROM "Transaction" t
-            LEFT JOIN "User" u ON t."UserId" = u."Id"
-            WHERE (t."UserId" = @UserId OR u."ParentUserId" = @UserId)
-              AND t."TransactionDate"::date BETWEEN @StartDate::date AND @EndDate::date
-              AND (@TransactionType IS NULL OR t."TransactionType" = @TransactionType)
-              AND (@CardId IS NULL OR t."CardId" = @CardId)
-              AND t."IsDeleted" = false
-        ),
-        paged AS (
-            SELECT * FROM base
-            ORDER BY
-                CASE WHEN @OrderBy = 'TransactionDate' AND @OrderAsc THEN "TransactionDate" END ASC,
-                CASE WHEN @OrderBy = 'TransactionDate' AND NOT @OrderAsc THEN "TransactionDate" END DESC,
-                CASE WHEN @OrderBy = 'Amount' AND @OrderAsc THEN "Amount" END ASC,
-                CASE WHEN @OrderBy = 'Amount' AND NOT @OrderAsc THEN "Amount" END DESC,
-                "TransactionDate" DESC
-            LIMIT @RowsPerPage OFFSET (@CurrentPage - 1) * @RowsPerPage
-        )
-        SELECT *, 
-               total_rows,
-               CEILING(total_rows::decimal / @RowsPerPage) AS total_pages,
-               @CurrentPage AS current_page,
-               @RowsPerPage AS rows_per_page
-        FROM paged;
-    """;
+                                                     WITH base AS (
+                                                         SELECT 
+                                                             t.*,
+                                                             c."Name" AS "CategoryName",
+                                                             COUNT(*) OVER() AS total_rows
+                                                         FROM "Transaction" t
+                                                         LEFT JOIN "User" u 
+                                                             ON t."UserId" = u."Id"
+                                                         LEFT JOIN "Category" c 
+                                                             ON c."Id" = t."CategoryId"
+                                                         WHERE (t."UserId" = @UserId OR u."ParentUserId" = @UserId)
+                                                           AND t."TransactionDate"::date BETWEEN @StartDate::date AND @EndDate::date
+                                                           AND (@TransactionType IS NULL OR t."TransactionType" = @TransactionType)
+                                                           AND (@CardId IS NULL OR t."CardId" = @CardId)
+                                                           AND t."IsDeleted" = false
+                                                     ),
+                                                     paged AS (
+                                                         SELECT *
+                                                         FROM base
+                                                         ORDER BY
+                                                             CASE WHEN @OrderBy = 'TransactionDate' AND @OrderAsc THEN "TransactionDate" END ASC,
+                                                             CASE WHEN @OrderBy = 'TransactionDate' AND NOT @OrderAsc THEN "TransactionDate" END DESC,
+                                                             CASE WHEN @OrderBy = 'Amount' AND @OrderAsc THEN "Amount" END ASC,
+                                                             CASE WHEN @OrderBy = 'Amount' AND NOT @OrderAsc THEN "Amount" END DESC,
+                                                             "TransactionDate" DESC
+                                                         LIMIT @RowsPerPage OFFSET (@CurrentPage - 1) * @RowsPerPage
+                                                     )
+                                                     SELECT 
+                                                         *,
+                                                         total_rows,
+                                                         CEILING(total_rows::decimal / @RowsPerPage) AS total_pages,
+                                                         @CurrentPage AS current_page,
+                                                         @RowsPerPage AS rows_per_page
+                                                     FROM paged;
+                                                     """;
 
     public const string GetPaidExpensesAmount = """
         SELECT COALESCE(SUM("Amount"), 0)

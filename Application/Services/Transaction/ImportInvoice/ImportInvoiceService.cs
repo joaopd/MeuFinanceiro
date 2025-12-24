@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Domain.Abstractions.ErrorHandling;
 using Domain.Entities;
 using Domain.Enums;
@@ -43,34 +44,32 @@ public class ImportInvoiceService(
             var base64Pdf = Convert.ToBase64String(ms.ToArray());
 
             var prompt = $@"
-                Aja como um especialista financeiro analisando faturas de cartão de crédito em PDF.
+                Extraia transações financeiras de uma fatura de cartão de crédito em PDF.
 
-                Categorias existentes no sistema:
-                [{categoryList}]
+                Ignore:
+                - pagamentos de fatura
+                - estornos
+                - créditos
+                - ajustes
 
-                Objetivo:
-                Extrair corretamente as transações financeiras.
-
-                Regras:
-                1. Extraia:
-                - TransactionDate
+                Extraia apenas:
                 - Description
                 - Amount
+                - TransactionDate
 
-                2. Ignore pagamentos de fatura, estornos, créditos ou ajustes.
+                Categorias disponíveis:
+                [{{categoryList}}]
 
-                3. Categorias:
-                - Se houver similaridade, use CategoryId
-                - Caso contrário, sugira NewCategoryName
+                Categorias:
+                - Se houver similaridade, retorne CategoryId
+                - Caso contrário, retorne NewCategoryName
 
-                4. Parcelamentos:
-                - Identifique 'Parcela X de Y'
+                Parcelamentos:
+                - Identifique quando a descrição contiver ""Parcela X de Y""
 
-                5. Datas:
-                - Transações parceladas devem pertencer ao mês da fatura
+                Formato de resposta:
+                Retorne APENAS um array JSON válido, sem explicações:
 
-                Formato:
-                Retorne APENAS um array JSON válido:
                 [
                   {{
                     ""Description"": ""string"",
@@ -79,8 +78,8 @@ public class ImportInvoiceService(
                     ""CategoryId"": ""uuid?"",
                     ""NewCategoryName"": ""string?""
                   }}
-                ]";
-
+                ]
+                ";
             var requestBody = new
             {
                 contents = new[]
@@ -125,15 +124,18 @@ public class ImportInvoiceService(
             if (!aiItems.Any())
                 return Result.Ok(0);
 
-            Invoice? invoice = null;
+            var invoices = new Dictionary<DateTime, Invoice>();
             var transactions = new List<Domain.Entities.Transaction>();
 
             foreach (var item in aiItems)
             {
+                var effectiveTransactionDate =
+                    ResolveEffectiveTransactionDate(item.TransactionDate, item.Description);
+
                 var isDuplicate = await transactionRepository.ExistsDuplicateAsync(
                     userId,
                     item.Amount,
-                    item.TransactionDate,
+                    effectiveTransactionDate,
                     item.Description);
 
                 if (isDuplicate)
@@ -152,9 +154,7 @@ public class ImportInvoiceService(
                     var existingCategory = await categoryRepository.GetByNameAsync(name);
 
                     if (existingCategory != null)
-                    {
                         categoryId = existingCategory.Id;
-                    }
                     else
                     {
                         var newCategory = new Domain.Entities.Category(name);
@@ -164,20 +164,25 @@ public class ImportInvoiceService(
                 }
 
                 var referenceDate = ResolveInvoiceReferenceDate(
-                    item.TransactionDate,
+                    effectiveTransactionDate,
                     card.ClosingDay);
 
-                invoice ??= await invoiceRepository
-                    .GetByCardAndDateAsync(card.Id, referenceDate);
-
-                if (invoice is null)
+                if (!invoices.TryGetValue(referenceDate, out var invoice))
                 {
-                    invoice = new Invoice(
-                        card.Id,
-                        referenceDate,
-                        new DateTime(referenceDate.Year, referenceDate.Month, card.DueDay));
+                    invoice = await invoiceRepository
+                        .GetByCardAndDateAsync(card.Id, referenceDate);
 
-                    await invoiceRepository.InsertAsync(invoice);
+                    if (invoice is null)
+                    {
+                        invoice = new Invoice(
+                            card.Id,
+                            referenceDate,
+                            new DateTime(referenceDate.Year, referenceDate.Month, card.DueDay));
+
+                        await invoiceRepository.InsertAsync(invoice);
+                    }
+
+                    invoices[referenceDate] = invoice;
                 }
 
                 invoice.AddTransactionAmount(item.Amount);
@@ -186,7 +191,7 @@ public class ImportInvoiceService(
                     userId,
                     categoryId,
                     item.Amount,
-                    item.TransactionDate,
+                    effectiveTransactionDate,
                     TransactionType.EXPENSE,
                     card.Id,
                     PaymentMethod.CREDIT,
@@ -206,14 +211,24 @@ public class ImportInvoiceService(
                 return Result.Ok(0);
 
             var success = await transactionRepository.InsertBulkAsync(transactions);
+            if (!success)
+                return Result.Fail(FinanceErrorMessage.DatabaseError);
+
+            foreach (var invoice in invoices.Values)
+            {
+                logger.LogInformation(
+                    "Updating Invoice {InvoiceId} - TotalAmount: {Total}",
+                    invoice.Id,
+                    invoice.TotalAmount);
+
+                await invoiceRepository.UpdateAsync(invoice);
+            }
 
             logger.LogInformation(
                 "ImportInvoice finished successfully - Imported: {Count}",
                 transactions.Count);
 
-            return success
-                ? Result.Ok(transactions.Count)
-                : Result.Fail(FinanceErrorMessage.DatabaseError);
+            return Result.Ok(transactions.Count);
         }
         catch (Exception ex)
         {
@@ -223,6 +238,32 @@ public class ImportInvoiceService(
 
             return Result.Fail(FinanceErrorMessage.UnexpectedError);
         }
+    }
+
+    private static DateTime ResolveEffectiveTransactionDate(
+        DateTime originalDate,
+        string description)
+    {
+        if (!TryParseInstallment(description, out var current))
+            return originalDate;
+
+        return originalDate.AddMonths(current - 1);
+    }
+
+    private static bool TryParseInstallment(string description, out int current)
+    {
+        current = 0;
+
+        var match = Regex.Match(
+            description,
+            @"Parcela\s+(\d+)\s+de\s+(\d+)",
+            RegexOptions.IgnoreCase);
+
+        if (!match.Success)
+            return false;
+
+        current = int.Parse(match.Groups[1].Value);
+        return true;
     }
 
     private static DateTime ResolveInvoiceReferenceDate(

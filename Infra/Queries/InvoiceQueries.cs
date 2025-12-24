@@ -2,50 +2,99 @@
 
 public static class InvoiceQueries
 {
-    public const string GetByCardAndDate = @"
-        SELECT * FROM Invoices 
-        WHERE CardId = @CardId 
-        AND MONTH(ReferenceDate) = @Month 
-        AND YEAR(ReferenceDate) = @Year";
+    // AJUSTE AQUI: Mudamos de ::date para ::timestamp
+    // Isso garante que o retorno seja compatível com DateTime no C#
+    private const string SelectColumns = """
+        SELECT 
+            i."Id", 
+            i."CardId", 
+            i."ReferenceDate"::timestamp, 
+            i."DueDate"::timestamp, 
+            i."TotalAmount", 
+            i."IsPaid", 
+            i."CreatedAt", 
+            i."UpdatedAt", 
+            i."CreatedBy", 
+            i."UpdatedBy", 
+            i."IsDeleted"
+        FROM "Invoice" i
+    """;
 
-    public const string GetByUserId = @"
-        SELECT i.* FROM Invoices i 
-        INNER JOIN Cards c ON i.CardId = c.Id 
-        WHERE c.UserId = @UserId 
-        ORDER BY i.DueDate DESC";
+    public const string GetByCardAndDate = $"""
+        {SelectColumns}
+        WHERE i."CardId" = @CardId
+          AND EXTRACT(MONTH FROM i."ReferenceDate") = @Month
+          AND EXTRACT(YEAR FROM i."ReferenceDate") = @Year
+          AND i."IsDeleted" = false;
+    """;
 
-    public const string Insert = @"
-        INSERT INTO Invoices (Id, CardId, ReferenceDate, DueDate, TotalAmount, IsPaid, CreatedAt, CreatedBy) 
-        VALUES (@Id, @CardId, @ReferenceDate, @DueDate, @TotalAmount, @IsPaid, @CreatedAt, @CreatedBy)";
+    public const string GetByUserId = $"""
+        {SelectColumns}
+        INNER JOIN "Card" c ON i."CardId" = c."Id"
+        WHERE c."UserId" = @UserId
+          AND i."IsDeleted" = false
+        ORDER BY i."DueDate" DESC;
+    """;
 
-    public const string GetById = "SELECT * FROM Invoices WHERE Id = @Id";
+    // O Insert permanece igual, pois o Postgres aceita DateTime para colunas do tipo date
+    public const string Insert = """
+        INSERT INTO "Invoice" (
+            "Id", "CardId", "ReferenceDate", "DueDate",
+            "TotalAmount", "IsPaid", "CreatedAt", "CreatedBy", "UpdatedAt", "UpdatedBy", "IsDeleted"
+        )
+        VALUES (
+            @Id, @CardId, @ReferenceDate, @DueDate,
+            @TotalAmount, @IsPaid, @CreatedAt, @CreatedBy, @UpdatedAt, @UpdatedBy, @IsDeleted
+        );
+    """;
 
-    public const string PayInvoice = @"
-        UPDATE Invoices 
-        SET IsPaid = 1, UpdatedAt = GETDATE(), UpdatedBy = @UserId 
-        WHERE Id = @InvoiceId";
+    public const string GetById = $"""
+        {SelectColumns}
+        WHERE i."Id" = @Id
+          AND i."IsDeleted" = false;
+    """;
 
-    public const string PayRelatedTransactions = @"
-        UPDATE Transactions 
-        SET IsPaid = 1, UpdatedAt = GETDATE(), UpdatedBy = @UserId 
-        WHERE InvoiceId = @InvoiceId";
-    
+    public const string PayInvoice = """
+        UPDATE "Invoice"
+        SET "IsPaid" = true,
+            "UpdatedAt" = CURRENT_TIMESTAMP,
+            "UpdatedBy" = @UserId
+        WHERE "Id" = @InvoiceId
+          AND "IsDeleted" = false;
+    """;
 
-        public const string GetAll = @"
-        SELECT * FROM Invoices
-        ORDER BY DueDate DESC";
+    public const string PayRelatedTransactions = """
+        UPDATE "Transaction"
+        SET "IsPaid" = true,
+            "UpdatedAt" = CURRENT_TIMESTAMP,
+            "UpdatedBy" = @UserId
+        WHERE "InvoiceId" = @InvoiceId
+          AND "IsDeleted" = false;
+    """;
 
-        public const string Update = @"
-        UPDATE Invoices SET
-            ReferenceDate = @ReferenceDate,
-            DueDate = @DueDate,
-            TotalAmount = @TotalAmount,
-            IsPaid = @IsPaid,
-            UpdatedAt = @UpdatedAt,
-            UpdatedBy = @UpdatedBy
-        WHERE Id = @Id";
+    public const string GetAll = $"""
+        {SelectColumns}
+        WHERE i."IsDeleted" = false
+        ORDER BY i."DueDate" DESC;
+    """;
 
-        public const string Delete = @"
-        DELETE FROM Invoices WHERE Id = @Id";
-        
+    public const string Update = """
+        UPDATE "Invoice" SET
+            "ReferenceDate" = @ReferenceDate,
+            "DueDate" = @DueDate,
+            "TotalAmount" = @TotalAmount,
+            "IsPaid" = @IsPaid,
+            "UpdatedAt" = @UpdatedAt,
+            "UpdatedBy" = @UpdatedBy
+        WHERE "Id" = @Id
+          AND "IsDeleted" = false;
+    """;
+
+    public const string Delete = """
+        UPDATE "Invoice"
+        SET "IsDeleted" = true,
+            "UpdatedAt" = CURRENT_TIMESTAMP,
+            "UpdatedBy" = @UserId
+        WHERE "Id" = @Id;
+    """;
 }

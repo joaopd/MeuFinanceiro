@@ -7,6 +7,7 @@ public class TransactionResponseDto
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public Guid CategoryId { get; set; }
+    public string? CategoryName { get; set; } = null!;
     public decimal Amount { get; set; }
     public DateTime TransactionDate { get; set; }
     public TransactionType TransactionType { get; set; }
