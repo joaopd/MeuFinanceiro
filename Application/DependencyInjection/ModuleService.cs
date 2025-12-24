@@ -11,6 +11,7 @@ using Application.Services.FixedExpense.GenerateMonthly;
 using Application.Services.FixedExpense.GetAllFixedExpenseByUserId;
 using Application.Services.FixedExpense.UpdateFixedExpense;
 using Application.Services.Transaction.CreateTransaction;
+using Application.Services.Transaction.GetTransactionByInvoiceReference;
 using Application.Services.Transaction.GetTransactionsByPeriod;
 using Application.Services.Transaction.ImportInvoice;
 using Application.Services.Transaction.TogglePaymentStatus;
@@ -42,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<IGetTransactionsByPeriodService, GetTransactionsByPeriodService>();
         services.AddScoped<ITogglePaymentStatusService, TogglePaymentStatusService>();
         services.AddScoped<IImportInvoiceService, ImportInvoiceService>();
+        services.AddScoped<IGetTransactionByInvoiceReferenceService, GetTransactionByInvoiceReferenceService>();
 
         // =========================
         // FIXED EXPENSE

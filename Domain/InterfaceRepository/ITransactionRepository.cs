@@ -51,4 +51,6 @@ public interface ITransactionRepository : IRepository<Transaction>
     Task<bool> ExistsByFixedExpenseAsync(Guid fixedExpenseId, int month, int year);
     Task<decimal> GetCreditCardInvoiceSumAsync(Guid cardId, DateTime startDate, DateTime endDate);
     Task<bool> ExistsDuplicateAsync(Guid userId, decimal amount, DateTime date, string description);
+    
+    Task<IEnumerable<TransactionPagedRow>> GetAllTransactionInvoiceAsync(Guid userId, Guid cardId, DateTime invoiceReference);
 }

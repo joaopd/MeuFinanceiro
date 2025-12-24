@@ -227,14 +227,31 @@ public static class TransactionQueries
           AND EXTRACT(YEAR FROM "TransactionDate") = @Year
           AND "IsDeleted" = false;
     """;
-    
+
     public const string ExistDuplicate = """
-       SELECT COUNT(1)
+        SELECT COUNT(1)
         FROM "Transaction"
         WHERE "UserId" = @UserId
           AND "Amount" = @Amount
           AND "TransactionDate"::date = @Date::date
           AND "Observation" = @Description
           AND "IsDeleted" = false;
+    """;
+    
+    public const string GetTransactionByInvoice = """
+                SELECT t.*,
+                       c."Name" AS "CategoryName"
+                   FROM "Transaction" t
+                   LEFT JOIN "Category" c 
+                       ON c."Id" = t."CategoryId"
+                   INNER JOIN "Invoice" i 
+                       ON t."InvoiceId" = i."Id" 
+                       AND i."CardId" = @CardId 
+                       AND EXTRACT(MONTH FROM i."ReferenceDate") = @InvoiceMonth
+                       AND EXTRACT(YEAR FROM i."ReferenceDate") = @InvoiceYear
+                WHERE t."UserId" = @UserId 
+                     AND t."CardId" = @CardId
+                     AND t."IsDeleted" = false 
+                ORDER BY t."TransactionDate" ASC;
     """;
 }

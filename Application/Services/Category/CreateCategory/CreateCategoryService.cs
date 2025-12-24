@@ -20,7 +20,7 @@ public class CreateCategoryService(
             if (string.IsNullOrWhiteSpace(request.Name))
                 return Result.Fail(FinanceErrorMessage.InvalidCategoryData);
 
-            var category = new Domain.Entities.Category(request.Name);
+            var category = new Domain.Entities.Category(request.Name.Trim());
 
             await categoryRepository.InsertAsync(category);
 

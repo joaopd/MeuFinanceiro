@@ -187,7 +187,6 @@ public class TransactionRepository : ITransactionRepository
         var count = await conn.ExecuteScalarAsync<int>(
             TransactionQueries.ExistsByFixedExpense,
             new { FixedExpenseId = fixedExpenseId, Month = month, Year = year });
-
         return count > 0;
     }
 
@@ -216,4 +215,16 @@ public class TransactionRepository : ITransactionRepository
 
         return count > 0;
     }
+
+    public async Task<IEnumerable<TransactionPagedRow>> GetAllTransactionInvoiceAsync(Guid userId, Guid cardId, DateTime invoiceReference)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        
+        return await conn.QueryAsync<TransactionPagedRow>(TransactionQueries.GetTransactionByInvoice, new
+        {
+            UserId = userId,
+            CardId = cardId,
+            InvoiceMonth = invoiceReference.Month,
+            InvoiceYear = invoiceReference.Year
+        });    }
 }
